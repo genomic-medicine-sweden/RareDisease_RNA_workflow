@@ -25,7 +25,6 @@ if(params.help){
 
 process STAR_Aln{
     publishDir "${params.output}", mode: 'copy', overwrite: true
-    cpus 16
 
     input:
         set val(sample) , file(r1), file(r2) from reads_align
@@ -42,7 +41,7 @@ process STAR_Aln{
          --twopassMode Basic \\
          --outReadsUnmapped None \\
          --runThreadN ${task.cpus} \\
-         --limitBAMsortRAM 31532137230 \\
+         --limitBAMsortRAM ${params.STAR_bam_sort_ram} \\
          --outSAMtype BAM SortedByCoordinate \\ 
          --outFileNamePrefix ${sample}. \\
          --quantMode GeneCounts \\
