@@ -1,5 +1,11 @@
 #!/usr/bin/dev nextflow
 
+params.help=false
+params.r1=false
+params.r2=false
+params.samplesheet=false
+params.platform="ILLUMINA"
+
 if(params.help){
     println "GMS-RNA workflow"
     println "Usage: nextflow main.nf --r1 read1.fq.gz --r2 --read2.fq.gz --sample sampleID --output output_directory -c config.conf"
@@ -9,7 +15,7 @@ if(params.help){
 
 }else if(params.r1 && params.r2 && params.sample){
 
-     reads_align=Channel( tuple(params.sample, file(params.r1), file(params.r2)) )
+     reads_align=Channel.of( [params.sample, file(params.r1), file(params.r2)] )
 
 }else if (params.samplesheet){
     Channel
@@ -27,7 +33,7 @@ process STAR_Aln{
     publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
-        set val(sample) , file(r1), file(r2) from reads_align
+        tuple val(sample) , file(r1), file(r2) from reads_align
            
     output:
         file "${sample}.Chimeric.out.junction" into junctions
@@ -42,7 +48,8 @@ process STAR_Aln{
          --outReadsUnmapped None \\
          --runThreadN ${task.cpus} \\
          --limitBAMsortRAM ${params.STAR_bam_sort_ram} \\
-         --outSAMtype BAM SortedByCoordinate \\ 
+         --outSAMtype BAM SortedByCoordinate \\
+         --outSAMattrRGline ID:${sample} PL=${params.platform} SM=${sample} \\
          --outFileNamePrefix ${sample}. \\
          --quantMode GeneCounts \\
          --outSAMstrandField intronMotif \\
