@@ -1,5 +1,5 @@
 #!/usr/bin/dev nextflow
-
+/proj/sens2017106/reference_material/fasta/
 params.help=false
 params.r1=false
 params.r2=false
@@ -36,10 +36,7 @@ process STAR_Aln{
         tuple val(sample) , file(r1), file(r2) from reads_align
            
     output:
-        file "${sample}.Chimeric.out.junction" into junctions
-        file "${sample}.Aligned.sortedByCoord.out.bam" into star_bam
-        file "${sample}.Aligned.sortedByCoord.out.bam.bai" into bai
-        file "${sample}.ReadsPerGene.out.tab" into geneCounts
+        tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai"), file("${sample}.ReadsPerGene.out.tab") into STAR_output
 
     """
     STAR --genomeDir ${params.STAR_ref_dir} \\
@@ -60,3 +57,32 @@ process STAR_Aln{
 
 }
 
+process GATK_Split{
+        publishDir "${params.output}", mode: 'copy', overwrite: true
+        
+        input:
+            tuple val(sample) , file(bam),file(bai),file(counts) from STAR_output
+
+        output:
+            tuple val(sample), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), file(${sample}.RG.split.Aligned.sortedByCoord.out.bam.bai") into gatk_split
+
+        """
+        gatk -T SplitNCigarReads -R ${params.ref} -I ${bam}  -o ${sample}.RG.split.Aligned.sortedByCoord.out.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS
+        samtools index ${sample}.RG.split.Aligned.sortedByCoord.out.bam
+        """
+}
+
+process GATK_ASE{
+        publishDir "${params.output}", mode: 'copy', overwrite: true
+
+        input:
+            tuple val(sample) , file(bam),file(bai) from gatk_split
+
+        output:
+            tuple val(sample), file("${sample}.vcf"), file("${sample}.GATKASE.csv") into gatk_hc
+
+        """
+        gatk -R ${params.ref} -T HaplotypeCaller -I ${bam} -stand_call_conf 10 -o ${sample}.vcf --min_mapping_quality_score 10
+        gatk -R ${params.ref} -T ASEReadCounter -o ${sample}.GATKASE.csv -I ${bam} -sites ${sample}.vcf
+        """
+}
