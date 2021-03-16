@@ -26,4 +26,4 @@ LC_ALL=C.UTF-8
     conda config --add channels conda-forge
     conda config --add channels bioconda
 
-    conda install samtools star stringtie
+    conda install samtools=1.11 star=2.7.8a stringtie=2.1.5
