@@ -64,11 +64,10 @@ process gatk_split{
         tuple val(sample) , file(bam), file(bai), file(counts) from STAR_output
 
     output:
-        tuple val(sample), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam.bai") into gatk_split_output
+        tuple val(sample), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), file("${sample}.RG.split.Aligned.sortedByCoord.out.bai") into gatk_split_output
 
     """
-    gatk -T SplitNCigarReads -R ${params.ref} -I ${bam}  -o ${sample}.RG.split.Aligned.sortedByCoord.out.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS
-    samtools index ${sample}.RG.split.Aligned.sortedByCoord.out.bam
+    gatk SplitNCigarReads -R ${params.ref} -I ${bam} -O ${sample}.RG.split.Aligned.sortedByCoord.out.bam --create-output-bam-index
     """
 
 
@@ -84,7 +83,7 @@ process GATK_ASE{
         tuple val(sample), file("${sample}.vcf"), file("${sample}.GATKASE.csv") into gatk_hc
 
     """
-    gatk -R ${params.ref} -T HaplotypeCaller -I ${bam} -stand_call_conf 10 -o ${sample}.vcf --min_mapping_quality_score 10
-    gatk -R ${params.ref} -T ASEReadCounter -o ${sample}.GATKASE.csv -I ${bam} -sites ${sample}.vcf
+    gatk HaplotypeCaller -R ${params.ref} -I ${bam} -stand-call-conf 10 -O ${sample}.vcf --minimum-mapping-quality 10
+    gatk ASEReadCounter  -R ${params.ref} -O ${sample}.GATKASE.csv -I ${bam} -V ${sample}.vcf
     """
 }

@@ -4,10 +4,11 @@ nextflow main.nf --help
 
 run a single sample:
 
-
+	nextflow main.nf --r1 read1.fq.gz --r2 --read2.fq.gz --sample sampleID --output output_directory -c config.conf
 
 run all samples in a samplesheet:
 
+	nextflow main.nf --samplesheet sample.csv --output output_directory -c config.conf
 
 # setup
 Modify the config file:
