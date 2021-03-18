@@ -34,12 +34,10 @@ process STAR_Aln{
 
     input:
         tuple val(sample) , file(r1), file(r2) from reads_align
+
            
     output:
-        file "${sample}.Chimeric.out.junction" into junctions
-        file "${sample}.Aligned.sortedByCoord.out.bam" into star_bam
-        file "${sample}.Aligned.sortedByCoord.out.bam.bai" into bai
-        file "${sample}.ReadsPerGene.out.tab" into geneCounts
+        tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai"), file("${sample}.ReadsPerGene.out.tab") into STAR_output
 
     """
     STAR --genomeDir ${params.STAR_ref_dir} \\
@@ -49,7 +47,7 @@ process STAR_Aln{
          --runThreadN ${task.cpus} \\
          --limitBAMsortRAM ${params.STAR_bam_sort_ram} \\
          --outSAMtype BAM SortedByCoordinate \\
-         --outSAMattrRGline ID:${sample} PL=${params.platform} SM=${sample} \\
+         --outSAMattrRGline ID:${sample} PL:${params.platform} SM:${sample} \\
          --outFileNamePrefix ${sample}. \\
          --quantMode GeneCounts \\
          --outSAMstrandField intronMotif \\
@@ -60,3 +58,32 @@ process STAR_Aln{
 
 }
 
+process gatk_split{
+
+    input:
+        tuple val(sample) , file(bam), file(bai), file(counts) from STAR_output
+
+    output:
+        tuple val(sample), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), file("${sample}.RG.split.Aligned.sortedByCoord.out.bai") into gatk_split_output
+
+    """
+    gatk SplitNCigarReads -R ${params.ref} -I ${bam} -O ${sample}.RG.split.Aligned.sortedByCoord.out.bam --create-output-bam-index
+    """
+
+
+}
+
+process GATK_ASE{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+       tuple val(sample) , file(bam),file(bai) from gatk_split_output
+
+    output:
+        tuple val(sample), file("${sample}.vcf"), file("${sample}.GATKASE.csv") into gatk_hc
+
+    """
+    gatk HaplotypeCaller -R ${params.ref} -I ${bam} -stand-call-conf 10 -O ${sample}.vcf --minimum-mapping-quality 10
+    gatk ASEReadCounter  -R ${params.ref} -O ${sample}.GATKASE.csv -I ${bam} -V ${sample}.vcf
+    """
+}
