@@ -16,9 +16,9 @@ LC_ALL=C.UTF-8
     apt-get -y install wget git bzip2 build-essential gcc zlib1g-dev language-pack-en-base apt-transport-https make cmake unzip python3
     update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
-    cd /root/ && wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    cd /root/ && chmod 700 ./Miniconda2-latest-Linux-x86_64.sh
-    cd /root/ && bash ./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/anaconda/
+    cd /root/ && wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    cd /root/ && chmod 700 ./Miniconda3-latest-Linux-x86_64.sh
+    cd /root/ && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /opt/anaconda/
 
     export PATH=/opt/anaconda/bin:${PATH}
 
