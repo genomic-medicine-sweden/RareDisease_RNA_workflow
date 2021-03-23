@@ -28,5 +28,7 @@ LC_ALL=C.UTF-8
 
     cd /bin/ && git clone https://github.com/J35P312/BootstrapAnn.git
 
-    conda install samtools=1.11 star=2.7.8a stringtie=2.1.5 gatk4=4.2.0 arriba=2.1.0 star-fusion=1.9.1 fusioncatcher=1.30 numpy scipy
+    conda install samtools star=2.7.8a gatk4=4.2.0 pip tabix
+    pip install numpy
+    pip install scipy
    
