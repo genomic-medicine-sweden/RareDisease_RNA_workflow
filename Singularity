@@ -16,9 +16,9 @@ LC_ALL=C.UTF-8
     apt-get -y install wget git bzip2 build-essential gcc zlib1g-dev language-pack-en-base apt-transport-https make cmake unzip python3
     update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
-    cd /root/ && wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    cd /root/ && chmod 700 ./Miniconda2-latest-Linux-x86_64.sh
-    cd /root/ && bash ./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/anaconda/
+    cd /root/ && wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    cd /root/ && chmod 700 ./Miniconda3-latest-Linux-x86_64.sh
+    cd /root/ && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /opt/anaconda/
 
     export PATH=/opt/anaconda/bin:${PATH}
 
@@ -26,4 +26,9 @@ LC_ALL=C.UTF-8
     conda config --add channels conda-forge
     conda config --add channels bioconda
 
-    conda install samtools=1.11 star=2.7.8a stringtie=2.1.5 gatk4=4.2.0 arriba=2.1.0 star-fusion=1.9.1 fusioncatcher=1.30
+    cd /bin/ && git clone https://github.com/J35P312/BootstrapAnn.git
+
+    conda install samtools star=2.7.8a gatk4=4.2.0 pip tabix
+    pip install numpy
+    pip install scipy
+   
