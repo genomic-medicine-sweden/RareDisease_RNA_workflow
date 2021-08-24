@@ -4,16 +4,16 @@ nextflow main.nf --help
 
 run a single sample:
 
-	nextflow main.nf --r1 read1.fq.gz --r2 --read2.fq.gz --sample sampleID --output output_directory -c config.conf
+	nextflow main.nf -profile singularity --r1 read1.fq.gz --r2 --read2.fq.gz --sample sampleID --output output_directory -c config.conf
 
 	optionally, a vcf file may be provided:
 	
-	nextflow main.nf --samplesheet sample.csv --output output_directory --vcf input.vcf -c config.conf
+	nextflow main.nf -profile singularity --samplesheet sample.csv --output output_directory --vcf input.vcf -c config.conf
 
 
 run all samples in a samplesheet:
 
-	nextflow main.nf --samplesheet sample.csv --output output_directory -c config.conf
+	nextflow main.nf -profile singularity --samplesheet sample.csv --output output_directory -c config.conf
 
 the samplesheet is a comma-separated file with the following header:
 
@@ -24,11 +24,15 @@ The sample, r1 and r2 are mandatory, the vcf column may be left empty
 # setup
 Modify the config file:
 
-	STAR_ref_dir : the path to the star reference index folder
+    reference_dir : specify the folder with all your references 
 
-	ref : the path to the reference fasta file (dict and fai file required)
+	STAR_ref_dir : the star reference index folder
 
-Download the singularity collection:
+	ref :the reference fasta file (dict and fai file required)
+
+The pipeline will automatically download and cache the latest singularity image. 
+
+Alternatively you can download the singularity collection:
 
 	singularity pull shub://J35P312/RareDisease_RNA_workflow
 
@@ -53,5 +57,5 @@ otherwise:
 	Arriba	
 	multiQC
 	fastQC
-        BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
+    BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
 

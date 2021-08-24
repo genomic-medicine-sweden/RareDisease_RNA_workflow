@@ -61,7 +61,7 @@ process STAR_Aln{
 }
 
 process gatk_split{
-
+   
     input:
         tuple val(sample) , file(bam), file(bai), file(counts), file(vcf) from STAR_output
 
@@ -76,7 +76,8 @@ process gatk_split{
 }
 
 process GATK_ASE{
-    publishDir "${params.output}", mode: 'copy', overwrite: true
+   
+   publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
         tuple val(sample) , file(bam),file(bai) , file(vcf) from gatk_split_output
@@ -87,7 +88,7 @@ process GATK_ASE{
     script:
 
     //the input is uncompressed vcf   
-    if ( vcf.exists() and !(vcf.getExtension() == "gz" ) )
+    if ( vcf.exists() && !(vcf.getExtension() == "gz" ) )
 
         """
         bgzip ${vcf}
