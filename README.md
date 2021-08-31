@@ -58,4 +58,5 @@ otherwise:
 	multiQC
 	fastQC
     BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
+    ucsc-wigtobigwig
 

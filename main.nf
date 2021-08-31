@@ -32,7 +32,7 @@ if(params.help){
 
 
 process STAR_Aln{
-    publishDir "${params.output}", mode: 'copy', overwrite: true
+    publishDir "${params.output}", mode: 'copy', overwrite: true, pattern: "*.{bam,bai,ReadsPerGene.out.tab}" 
 
     input:
         tuple val(sample), file(r1), file(r2), file(vcf) from reads_align
@@ -40,6 +40,8 @@ process STAR_Aln{
            
     output:
         tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai"), file("${sample}.ReadsPerGene.out.tab"), file(vcf) into STAR_output
+        tuple val(sample), file("${sample}.Signal.UniqueMultiple.str1.out.wig") into sj_wig_input
+        tuple val(sample), file("${sample}.SJ.out.tab") into sj_bed_input
 
     """
     STAR --genomeDir ${params.STAR_ref_dir} \\
@@ -53,6 +55,9 @@ process STAR_Aln{
          --outFileNamePrefix ${sample}. \\
          --quantMode GeneCounts \\
          --outSAMstrandField intronMotif \\
+         --outWigNorm None \\
+         --outWigType wiggle \\
+         --outWigStrand Unstranded \\
          --readFilesCommand gunzip -c
 
     samtools index ${sample}.Aligned.sortedByCoord.out.bam
@@ -72,7 +77,38 @@ process gatk_split{
     gatk SplitNCigarReads -R ${params.ref} -I ${bam} -O ${sample}.RG.split.Aligned.sortedByCoord.out.bam --create-output-bam-index
     """
 
+}
 
+process sj_wig{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+        tuple val(sample), file(wig) from sj_wig_input
+    
+    output: 
+        tuple val(sample), file("${sample}.bigwig")
+
+    """
+        cut -f1,2 ${params.ref}.fai > contig_file_size.tsv &&
+        wigToBigWig ${wig} contig_file_size.tsv ${sample}.bigwig
+    """
+    
+}
+
+process sj_bed{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+        tuple val(sample), file(sj) from sj_bed_input
+    
+    output: 
+        tuple val(sample), file("${sample}_sj.bed.gz"), file("${sample}_sj.bed.gz.tbi")
+
+    """
+        star_sj_tab_to_bed.pl ${sj} | bgzip --stdout > ${sample}_sj.bed.gz
+        tabix -p bed ${sample}_sj.bed.gz       
+    """
+    
 }
 
 process GATK_ASE{

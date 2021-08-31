@@ -28,7 +28,7 @@ LC_ALL=C.UTF-8
 
     cd /bin/ && git clone https://github.com/J35P312/BootstrapAnn.git
 
-    conda install samtools star=2.7.8a gatk4=4.2.0 pip tabix
+    conda install samtools star=2.7.8a gatk4=4.2.0 pip tabix ucsc-wigtobigwig=377
     pip install numpy
     pip install scipy
    
