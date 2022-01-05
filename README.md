@@ -18,7 +18,7 @@ run all samples in a samplesheet:
 
 the samplesheet is a comma-separated file with the following header:
 
-	sample,r1,r2,vcf
+	sample,r1,r2
 
 The sample, r1 and r2 are mandatory, the vcf column may be left empty	
 
