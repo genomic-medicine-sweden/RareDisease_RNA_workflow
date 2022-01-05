@@ -53,9 +53,6 @@ otherwise:
 	gatk
 	stringtie
 	picard
-	star-fusion
-	fusioncatcher
-	Arriba	
 	multiQC
 	fastQC
     BootstrapAnn (https://github.com/J35P312/BootstrapAnn)

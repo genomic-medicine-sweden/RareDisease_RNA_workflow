@@ -2,10 +2,8 @@
 
 params.help=false
 params.r1=false
-params.vcf=false
 params.r2=false
 params.samplesheet=false
-params.platform="ILLUMINA"
 
 if(params.help){
     println "GMS-RNA workflow"
@@ -22,25 +20,26 @@ if(params.help){
     Channel
         .fromPath(params.samplesheet)
         .splitCsv(header:true)
-        .map{ row-> tuple(row.id, row.read1, row.read2 ) }
-        .into {reads_align}
+        .map{ row-> tuple(row.id, file(row.read1), file(row.read2)) }
+        .set {reads_align}
 
 }else{
     println "Nope."
     exit 0
 }
-print(params.r1)
+
 process STAR_Aln{
     publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
-	        tuple val(sample),val(r1),val(r2) from reads_align
+	    tuple val(sample),val(r1),val(r2) from reads_align
            
     output:
-        tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai"), file("${sample}.ReadsPerGene.out.tab") into STAR_output
+        tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai") into STAR_output
+        tuple val(sample), file("${sample}.ReadsPerGene.out.tab")
+        tuple val(sample), file('*Log.out'), file('*Log.final.out'), file('*Log.progress.out') into star_multiqc
 
     """
-
     zcat ${r1} > R1.fastq
     zcat ${r2} > R2.fastq
 
@@ -55,7 +54,28 @@ process STAR_Aln{
          --quantMode GeneCounts \\
          --outSAMstrandField intronMotif
 
-    samtools index ${sample}.Aligned.sortedByCoord.out.bam
+    samtools index ${sample}.Aligned.sortedByCoord.out.bam 
+    """
+
+}
+
+STAR_output.into {gatk_split_input; metrics_input}
+
+process picard_collectrnaseqmetrics{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+        tuple val(sample), path(bam), path(bai) from metrics_input
+    
+    output:
+        tuple val(sample), path("${sample}_rna_metrics.txt") into metric_multiqc
+
+    """
+    picard CollectRnaSeqMetrics \\
+        --STRAND_SPECIFICITY ${params.strandedness} \\
+        --REF_FLAT ${params.annotation_refflat} \\
+        --INPUT ${bam} \\
+        --OUTPUT ${sample}_rna_metrics.txt \\
     """
 
 }
@@ -63,7 +83,7 @@ process STAR_Aln{
 process gatk_split{
 
     input:
-        tuple val(sample) , file(bam), file(bai), file(counts) from STAR_output
+        tuple val(sample) , file(bam), file(bai) from gatk_split_input
 
     output:
         tuple val(sample), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), file("${sample}.RG.split.Aligned.sortedByCoord.out.bai") into gatk_split_output
@@ -71,27 +91,45 @@ process gatk_split{
     """
     gatk SplitNCigarReads -R ${params.ref} -I ${bam} -O ${sample}.RG.split.Aligned.sortedByCoord.out.bam --create-output-bam-index
     """
+
 }
 
 process GATK_ASE{
     publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
-	        tuple val(sample) , file(bam),file(bai)  from gatk_split_output
-
+	        tuple val(sample) , file(bam),file(bai) from gatk_split_output
 
     output:
         tuple val(sample), file("${sample}.ase.vcf"), file("${sample}.GATKASE.csv") into gatk_hc
 
+//  TODO: Add bcftools to container
     script:
 
         """
         gatk HaplotypeCaller -R ${params.ref} -I ${bam} -stand-call-conf 10 -O ${sample}.vcf --minimum-mapping-quality 10
-        bgzip ${sample}.vcf
+        bcftools view --genotype het --max-alleles --min-alleles 2 --types snps -O z -o {sample}.vcf.gz ${sample}.vcf
         tabix -p vcf ${sample}.vcf.gz
-        gatk ASEReadCounter  -R ${params.ref} -O ${sample}.GATKASE.csv -I ${bam} -V ${sample}.vcf.gz
+        gatk ASEReadCounter -R ${params.ref} -O ${sample}.GATKASE.csv -I ${bam} -V ${sample}.vcf.gz
         python ${params.bootstrapann} --vcf ${sample}.vcf.gz --ase ${sample}.GATKASE.csv > ${sample}.ase.vcf
         """
 
+}
 
+// Combine metric output files to one channel
+multiqc_input = star_multiqc.join(metric_multiqc).collect{it[1..-1]}
+
+process multiqc{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+    
+    input: 
+        //tuple val(sample), file(picard_metrics) from metric_multiqc
+        path(qc_files) from multiqc_input
+
+    output:
+        path "*multiqc_report.html"
+        path "*_data"
+    """
+    multiqc .
+    """
 }
