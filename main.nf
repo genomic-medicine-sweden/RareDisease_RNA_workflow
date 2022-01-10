@@ -81,6 +81,7 @@ process picard_collectrnaseqmetrics{
 }
 
 process stringtie{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
         tuple val(sample) , file(bam),file(bai)  from stringtie_input
@@ -91,12 +92,13 @@ process stringtie{
     script:
 
     """
-    stringtie ${bam} -G ${params.gtf} > ${sample}.stringtie.gtf
+    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${params.gtf} > ${sample}.stringtie.gtf
     """
 
 }
 
 process gffcompare{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
         tuple val(sample), file(stringtie_gtf) from stringtie_output
