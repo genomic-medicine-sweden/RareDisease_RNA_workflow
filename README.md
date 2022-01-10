@@ -4,12 +4,13 @@ nextflow main.nf --help
 
 run a single sample:
 
-	nextflow main.nf -profile singularity --r1 read1.fq.gz --r2 --read2.fq.gz --sample sampleID --output output_directory -c config.conf
+	nextflow main.nf -profile singularity --r1 read1.fq.gz --r2 read2.fq.gz --sample sampleID --output output_directory -c config.conf
 
-	optionally, a vcf file may be provided:
-	
-	nextflow main.nf -profile singularity --samplesheet sample.csv --output output_directory --vcf input.vcf -c config.conf
+run a single sample with multiple fastq files
 
+	nextflow main.nf -profile singularity --r1 "folder/*R1*.fq.gz" --r2 "folder/*R2*.fq.gz" --sample sampleID --output output_directory -c config.conf
+
+NOTE: you need to add quotation marks around the search pattern
 
 run all samples in a samplesheet:
 
@@ -17,7 +18,7 @@ run all samples in a samplesheet:
 
 the samplesheet is a comma-separated file with the following header:
 
-	sample,r1,r2,vcf
+	sample,r1,r2
 
 The sample, r1 and r2 are mandatory, the vcf column may be left empty	
 
@@ -52,9 +53,6 @@ otherwise:
 	gatk
 	stringtie
 	picard
-	star-fusion
-	fusioncatcher
-	Arriba	
 	multiQC
 	fastQC
     BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
