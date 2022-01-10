@@ -59,7 +59,7 @@ process STAR_Aln{
 
 }
 
-STAR_output.into {gatk_split_input; metrics_input}
+STAR_output.into {gatk_split_input; metrics_input; stringtie_input}
 
 process picard_collectrnaseqmetrics{
     publishDir "${params.output}", mode: 'copy', overwrite: true
@@ -78,6 +78,38 @@ process picard_collectrnaseqmetrics{
         --OUTPUT ${sample}_rna_metrics.txt \\
     """
 
+}
+
+process stringtie{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+        tuple val(sample) , file(bam),file(bai)  from stringtie_input
+
+    output:
+        tuple val(sample), file("${sample}.stringtie.gtf") into stringtie_output
+
+    script:
+
+    """
+    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${params.gtf} > ${sample}.stringtie.gtf
+    """
+
+}
+
+process gffcompare{
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+        tuple val(sample), file(stringtie_gtf) from stringtie_output
+
+    output:
+        tuple val(sample), file("${sample}.stringtie.stats"), file("${sample}.stringtie.annotated.gtf") into gffcompare_output
+
+    script:
+    """
+    gffcompare -r ${params.gtf} -o ${sample}.stringtie ${stringtie_gtf}
+    """
 }
 
 process gatk_split{
