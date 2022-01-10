@@ -153,3 +153,33 @@ process GATK_ASE{
 
 
 }
+
+process utilities_DROP{
+    // this process will generate 1) gene counts from STAR output 2) sample_annotations.tsv for DROP 3) config.yml for DROP
+
+    publishDir "${params.output}", mode: 'copy', overwrite: true
+
+    input:
+        tuple val(sample), file(tab) from star_gene_counts
+    
+    output:
+        file("external_geneCounts.tsv") into external_geneCounts
+
+    """
+        generate_gene_counts.py --sample $sample --star $star_gene_counts --output external_geneCounts.tsv
+        generate_drop_sample_annot.py --samples --counts --output
+        generate_drop_config.py
+    """
+
+}
+// instructions 1: process *ReadsPerGene.out.tab from STAR and produce a gene_counts.tsv.gz with the following headers:
+// geneID, sample1, sample2, ..
+
+// instructions 2: construct sample_annotation.tsv with the following headers:
+// if gene counts: col_1=rna_id, ..., col_5=drop_group, col_11=absolute path, col_12=gene_annotation
+// if for AS+MAE: RNA_ID,RNA_BAM_FILE,DNA_VCF_FILE,DNA_ID,DROP_GROUP,PAIRED_END,COUNT_MODE,COUNT_OVERLAPS,STRAND,HPO_TERMS,GENE_COUNTS_FILE,GENE_ANNOTATION,GENOME
+
+// instructions 3: construct config.yml
+
+// instructions 4: use 2 + 3 files as input for running DROP
+// snakemake will need to be in a docker that inherits 
