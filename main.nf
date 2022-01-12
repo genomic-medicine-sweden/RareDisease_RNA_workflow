@@ -14,7 +14,7 @@ if(params.help){
 
 }else if(params.r1 && params.r2 && params.sample){
 
-     reads_align=Channel.of( [params.sample, params.r1, params.r2] )
+     reads_align=Channel.of( [params.sample, file(params.r1), file(params.r2)] )
 
 }else if (params.samplesheet){
     Channel
