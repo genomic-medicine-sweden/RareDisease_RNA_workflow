@@ -35,7 +35,7 @@ process fastqc{
 
     input:
 	    tuple val(sample), val(r1), val(r2) from ch_reads_qc
-    
+
     output:
         tuple val(sample), file('*1_fastqc.zip'), file('*2_fastqc.zip') into fastqc_multiqc
 
@@ -45,20 +45,47 @@ process fastqc{
     def R2 = r2.getName()
 
     """
-    ln -s ${r1} ${R1} 
-    ln -s ${r2} ${R2} 
+    ln -s ${r1} ${R1}
+    ln -s ${r2} ${R2}
     fastqc --threads ${task.cpus} ${R1} ${R2}
     """
 
 }
 ch_multiqc_input = ch_multiqc_input.join(fastqc_multiqc)
 
+if (!params.annotation_refflat || file(params.annotation_refflat).isEmpty()) {
+
+    process gtf2refflat{
+
+        input:
+            file(gtf) from file("${params.gtf}")
+
+        output:
+            file('*.refflat') into ch_refflat
+
+        script:
+
+        def genepred = gtf.getSimpleName() + '.genepred'
+        def refflat = gtf.getSimpleName() + '.refflat'
+
+        """
+        gtfToGenePred -genePredExt -geneNameAsName2 ${gtf} ${genepred}
+        paste ${genepred} ${genepred} | cut -f12,16-25 > ${refflat}
+        """
+
+    }
+} else {
+
+    ch_refflat = Channel.value(params.annotation_refflat)
+}
+
+
 process STAR_Aln{
     publishDir "${params.output}", mode: 'copy', overwrite: true
 
     input:
 	    tuple val(sample), val(r1), val(r2) from ch_reads_align
-           
+
     output:
         tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai") into STAR_output
         tuple val(sample), file("${sample}.ReadsPerGene.out.tab")
@@ -79,7 +106,7 @@ process STAR_Aln{
          --quantMode GeneCounts \\
          --outSAMstrandField intronMotif
 
-    samtools index ${sample}.Aligned.sortedByCoord.out.bam 
+    samtools index ${sample}.Aligned.sortedByCoord.out.bam
     """
 
 }
@@ -92,14 +119,15 @@ process picard_collectrnaseqmetrics{
 
     input:
         tuple val(sample), path(bam), path(bai) from metrics_input
-    
+        path(refflat) from ch_refflat
+
     output:
         tuple val(sample), path("${sample}_rna_metrics.txt") into metric_multiqc
 
     """
     picard CollectRnaSeqMetrics \\
         --STRAND_SPECIFICITY ${params.strandedness} \\
-        --REF_FLAT ${params.annotation_refflat} \\
+        --REF_FLAT ${refflat} \\
         --INPUT ${bam} \\
         --OUTPUT ${sample}_rna_metrics.txt \\
     """
@@ -164,7 +192,7 @@ process GATK_ASE{
     output:
         tuple val(sample), file("${sample}.ase.vcf"), file("${sample}.GATKASE.csv") into gatk_hc
 
-//  TODO: Add bcftools to container
+//  TODO: Add bcftools to container or break up the process
     script:
 
         """
@@ -181,8 +209,8 @@ process GATK_ASE{
 ch_multiqc_input = ch_multiqc_input.collect{it[1..-1]}
 process multiqc{
     publishDir "${params.output}", mode: 'copy', overwrite: true
-    
-    input: 
+
+    input:
         //tuple val(sample), file(picard_metrics) from metric_multiqc
         path(qc_files) from ch_multiqc_input
 
