@@ -38,7 +38,7 @@ process fastqc{
 	    tuple val(sample), val(r1), val(r2) from ch_reads_qc
 
     output:
-        tuple val(sample), file('*1_fastqc.zip'), file('*2_fastqc.zip') into fastqc_multiqc
+        tuple val(sample), file("${r1.simpleName}*_fastqc.zip"), file("${r2.simpleName}*_fastqc.zip") into fastqc_multiqc
 
     script:
 
