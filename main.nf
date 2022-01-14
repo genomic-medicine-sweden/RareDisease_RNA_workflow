@@ -161,10 +161,10 @@ if (!params.annotation_refflat || file(params.annotation_refflat).isEmpty()) {
     process gtf2refflat{
 
         input:
-            file(gtf) from ch_gtf
+            path(gtf) from ch_gtf
 
         output:
-            file('*.refflat') into ch_refflat
+            path('*.refflat') into ch_refflat
 
         script:
 
