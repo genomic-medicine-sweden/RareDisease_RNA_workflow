@@ -35,4 +35,4 @@ jobs:
           sudo mv nextflow /usr/local/bin/
       - name: Run pipeline with test data
         run: |
-          nextflow main.nf -c config.conf -profile test,docker --samplesheet .github/samplesheet_test.csv
+          nextflow main.nf -c config.conf -profile test,docker --samplesheet .github/samplesheet_test.csv --output /dev/null
