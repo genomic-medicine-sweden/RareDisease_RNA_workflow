@@ -5,6 +5,7 @@ params.help=false
 params.r1=false
 params.r2=false
 params.samplesheet=false
+params.annotation_refflat=false
 
 if(params.help){
     println "GMS-RNA workflow"
@@ -30,18 +31,13 @@ if(params.help){
     exit 0
 }
 
-// Initiate reference channels
+// Initiate references
 ch_fasta = file(params.fasta)
 ch_star_index = file(params.star_index)
 ch_gtf = file(params.gtf)
 ch_fai = file(params.fasta + '.fai')
-ch_dict = file(params.fasta).getParent()/file(params.fasta).getSimpleName() + '.dict'
-fasta_dict = file(params.fasta).getParent()/file(params.fasta).getSimpleName() + '.dict'
-ch_refflat = params.annotation_refflat
-    ? Channel.fromPath( params.annotation_refflat, checkIfExists: true )
-    : Channel.empty()
-
-ch_multiqc_input = ch_reads.map{ it.first() }
+ch_dict = file("${ch_fasta.Parent}/${ch_fasta.SimpleName}.dict")
+ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file("${ch_gtf.Parent}/${ch_gtf.SimpleName}.refflat")
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
@@ -54,6 +50,9 @@ process untar_star_index{
 
     output:
         path "${star_index_decompressed}", emit: star_index
+
+    when:
+        star_index.getExtension() == 'gz'
 
     script:
 
@@ -71,6 +70,9 @@ process gunzip_gtf{
 
     output:
         path('*.gtf') , emit: gtf
+
+    when:
+        gtf.getExtension() == 'gz'
 
     """
     gunzip -f ${gtf}
@@ -385,68 +387,43 @@ workflow {
 
     main:
 
-    // preprocess references
-    if ( ch_star_index.getExtension() == 'gz' ) {
+    // Preprocess references
+    ch_star_index = untar_star_index(ch_star_index).ifEmpty(ch_star_index)
+    ch_gtf = gunzip_gtf(ch_gtf).ifEmpty(ch_gtf)
+    ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
+    ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
+    ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
+    //ch_refflat = ch_refflat.toList().isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
 
-        untar_star_index(ch_star_index)
-        .set{ ch_star_index }
-    }
-    if ( ch_gtf.getExtension() == 'gz' ) {
-
-        gunzip_gtf(ch_gtf)
-        .set{ ch_gtf }
-    }
-    if ( ch_fai.isEmpty() ) {
-
-        index_fasta(ch_fasta)
-        .set{ ch_fai}
-    }
-    if ( ch_dict.isEmpty() ) {
-
-        build_fasta_dict(ch_fasta)
-        .set{ ch_dict }
-    }
-    if (ch_refflat.toList().isEmpty()) {
-
-        gtf2refflat(ch_gtf)
-        .set{ ch_refflat }
-    }
-
-    // main workflow
+    // Alignment
     cat_fastq(ch_reads)
-
-    fastqc(cat_fastq.out)
-    ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
-
     STAR_Aln(cat_fastq.out, ch_star_index)
-    ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
-
     index_bam(STAR_Aln.out.bam)
     ch_indexed_bam = STAR_Aln.out.bam.join(index_bam.out)
 
+    // QC
+    fastqc(cat_fastq.out)
     picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat)
-    ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
 
+    // Assemble transcripts
     stringtie(ch_indexed_bam, ch_gtf)
-
     gffcompare(stringtie.out, ch_gtf)
-    ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
 
+    // ASE subworkflow
     gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
-
     gatk_haplotypecaller(gatk_split.out, ch_fasta, ch_fai, ch_dict)
-
     bcftools_compress_and_index(gatk_haplotypecaller.out)
-
     bcftools_prep_vcf(gatk_haplotypecaller.out)
-
     gatk_asereadcounter(bcftools_prep_vcf.out, ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
-
     bootstrapann(bcftools_compress_and_index.out, gatk_asereadcounter.out)
-
     recompress_and_index_vcf(bootstrapann.out)
 
     // Combine metric output files to one channel for multiqc
+    ch_multiqc_input = ch_reads.map{ it.first() }
+    ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
+    ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
+    ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
+    ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
     ch_multiqc_input = ch_multiqc_input.collect{it[1..-1]}
     multiqc(ch_multiqc_input)
 }
