@@ -43,8 +43,8 @@ ch_refflat = params.annotation_refflat
 
 ch_multiqc_input = ch_reads.map{ it.first() }
 
-// Setup tempdir
-params.tmpdir = params.tmpdir ?: "${workflow.workDir}/run_tmp/${workflow.runName}"
+// Setup tempdir - can be overridden in config
+params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
 file(params.tmpdir).mkdir()
 
 process untar_star_index{
