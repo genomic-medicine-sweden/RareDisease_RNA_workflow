@@ -229,11 +229,12 @@ process stringtie{
 
     output:
         tuple val(sample), path("${sample}_stringtie.gtf"), emit: gtf
+	tuple val(sample), path("${sample}_stringtie.tab"), emit: tab
 
     script:
 
     """
-    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${gtf} > ${sample}_stringtie.gtf
+    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${gtf} -A ${sample}_stringtie.tab > ${sample}_stringtie.gtf
     """
 }
 
@@ -406,8 +407,9 @@ workflow {
     picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat)
 
     // Assemble transcripts
-    stringtie(ch_indexed_bam, ch_gtf, ch_tab)
-    gffcompare(stringtie.out, ch_gtf)
+    stringtie(ch_indexed_bam, ch_gtf)
+    gffcompare(stringtie.out.gtf, ch_gtf)
+
 
     // ASE subworkflow
     gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
