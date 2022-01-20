@@ -408,7 +408,7 @@ workflow {
 
     // Assemble transcripts
     stringtie(ch_indexed_bam, ch_gtf)
-    gffcompare(stringtie.out, ch_gtf)
+    gffcompare(stringtie.out, ch_gtf,ch_tab)
 
     // ASE subworkflow
     gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
