@@ -406,7 +406,7 @@ workflow {
     picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat)
 
     // Assemble transcripts
-    stringtie(ch_indexed_bam, ch_gtf)
+    stringtie(ch_indexed_bam, ch_gtf, ch_tab)
     gffcompare(stringtie.out, ch_gtf)
 
     // ASE subworkflow
