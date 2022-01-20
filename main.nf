@@ -229,11 +229,12 @@ process stringtie{
 
     output:
         tuple val(sample), path("${sample}_stringtie.gtf"), emit: gtf
+	tuple val(sample), path("${sample}_stringtie.tab"), emit: tab
 
     script:
 
     """
-    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${gtf} > ${sample}_stringtie.gtf
+    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${gtf} -A ${sample}_stringtie.tab > ${sample}_stringtie.gtf
     """
 }
 
