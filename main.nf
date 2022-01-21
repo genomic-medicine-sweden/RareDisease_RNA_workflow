@@ -210,10 +210,17 @@ process picard_collectrnaseqmetrics{
         tuple val(sample), path("${sample}_rna_metrics.txt")
 
     script:
+    def strandedness = ''
+    if (params.strandedness == 'forward') {
+        strandedness = '--STRAND_SPECIFICITY FIRST_READ_TRANSCRIPTION_STRAND'
+    } else if (params.strandedness == 'reverse') {
+        strandedness = '--STRAND_SPECIFICITY SECOND_READ_TRANSCRIPTION_STRAND'
+    }
+
     """
     picard CollectRnaSeqMetrics \\
         --TMP_DIR ${params.tmpdir} \\
-        --STRAND_SPECIFICITY ${params.strandedness} \\
+        ${strandedness} \\
         --REF_FLAT ${refflat} \\
         --INPUT ${bam} \\
         --OUTPUT ${sample}_rna_metrics.txt \\
@@ -229,12 +236,18 @@ process stringtie{
 
     output:
         tuple val(sample), path("${sample}_stringtie.gtf"), emit: gtf
-	tuple val(sample), path("${sample}_stringtie.tab"), emit: tab
+	    tuple val(sample), path("${sample}_stringtie.tab"), emit: tab
 
     script:
+    def strandedness = ''
+    if (params.strandedness == 'forward') {
+        strandedness = '--fr'
+    } else if (params.strandedness == 'reverse') {
+        strandedness = '--rf'
+    }
 
     """
-    stringtie ${bam} -p ${task.cpus} ${params.stranded} -G ${gtf} -A ${sample}_stringtie.tab > ${sample}_stringtie.gtf
+    stringtie ${bam} -p ${task.cpus} ${strandedness} -G ${gtf} -A ${sample}_stringtie.tab > ${sample}_stringtie.gtf
     """
 }
 
@@ -394,7 +407,6 @@ workflow {
     ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
     ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
     ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
-    //ch_refflat = ch_refflat.toList().isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
 
     // Alignment
     cat_fastq(ch_reads)
