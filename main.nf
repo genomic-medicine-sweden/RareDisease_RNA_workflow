@@ -38,6 +38,7 @@ ch_gtf = file(params.gtf)
 ch_fai = file(params.fasta + '.fai')
 ch_dict = file("${ch_fasta.Parent}/${ch_fasta.SimpleName}.dict")
 ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file("${ch_gtf.Parent}/${ch_gtf.SimpleName}.refflat")
+ch_rrna_bed = file(params.rrna_bed)
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
@@ -102,6 +103,21 @@ process build_fasta_dict{
 
     """
     gatk CreateSequenceDictionary -R ${fasta}
+    """
+}
+
+process build_rrna_intervallist{
+
+    input:
+        path fasta_dict
+        path gtf
+
+    output:
+        path('*.bed'), emit: rrna_interval_list
+
+    """
+    perl -nae 'if (/^#/) {print \$_} elsif (\$_ =~ / gene_type \s \"(rRNA|rRNA_pseudogene|Mt_rRNA)\" /nxms) {print \$_}' ${gtf} > rrna.gtf
+    gtf2bed rrna.gtf > ${gtf.baseName}.bed
     """
 }
 
@@ -407,6 +423,7 @@ workflow {
     ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
     ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
     ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
+    ch_rrna_bed = ch_rrna_bed.isEmpty() ? build_rrna_intervallist(ch_dict, ch_gtf) : ch_rrna_bed
 
     // Alignment
     cat_fastq(ch_reads)
