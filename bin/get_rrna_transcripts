@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+my $in = shift @ARGV;
+open( my $fh, '<', $in) or die qq{Could not open: $in $!};
+
+while (my $row = <$fh>) {
+
+    if ($row =~ /^#/) {
+
+        print STDOUT $row;
+    }
+    elsif ($row =~ / gene_type \s \"(?:rRNA|rRNA_pseudogene|Mt_rRNA)\" /xms ) {
+
+        print STDOUT $row;
+    }
+}
+
+close $fh;
