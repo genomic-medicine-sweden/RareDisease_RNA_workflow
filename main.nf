@@ -38,6 +38,7 @@ ch_gtf = file(params.gtf)
 ch_fai = file(params.fasta + '.fai')
 ch_dict = file("${ch_fasta.Parent}/${ch_fasta.SimpleName}.dict")
 ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file("${ch_gtf.Parent}/${ch_gtf.SimpleName}.refflat")
+ch_rrna_intervals = params.rrna_intervals ? file(params.rrna_intervals) : params.rrna_intervals
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
@@ -102,6 +103,37 @@ process build_fasta_dict{
 
     """
     gatk CreateSequenceDictionary -R ${fasta}
+    """
+}
+
+process get_rrna_transcripts{
+
+    input:
+        path gtf
+
+    output:
+        path('rrna.bed'), emit: rrna_bed
+
+    """
+    $baseDir/bin/get_rrna_transcripts ${gtf} > rrna.gtf
+    $baseDir/bin/gtf2bed rrna.gtf > rrna.bed
+    """
+}
+
+process build_rrna_intervallist{
+
+    input:
+        path fasta_dict
+        path bed
+
+    output:
+        path('rrna.interval_list'), emit: rrna_interval_list
+
+    when:
+        bed.size() > 1
+
+    """
+    gatk BedToIntervalList -INPUT ${bed} -SEQUENCE_DICTIONARY ${fasta_dict} -OUTPUT rrna.interval_list
     """
 }
 
@@ -205,6 +237,7 @@ process picard_collectrnaseqmetrics{
     input:
         tuple val(sample), path(bam), path(bai)
         path(refflat)
+        path(rrna_intervals)
 
     output:
         tuple val(sample), path("${sample}_rna_metrics.txt")
@@ -216,11 +249,13 @@ process picard_collectrnaseqmetrics{
     } else if (params.strandedness == 'reverse') {
         strandedness = '--STRAND_SPECIFICITY SECOND_READ_TRANSCRIPTION_STRAND'
     }
+    def rrna = rrna_intervals == [] ? '' : "--RIBOSOMAL_INTERVALS ${rrna_intervals}"
 
     """
     picard CollectRnaSeqMetrics \\
         --TMP_DIR ${params.tmpdir} \\
         ${strandedness} \\
+        ${rrna} \\
         --REF_FLAT ${refflat} \\
         --INPUT ${bam} \\
         --OUTPUT ${sample}_rna_metrics.txt \\
@@ -407,6 +442,7 @@ workflow {
     ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
     ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
     ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
+    ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf)).ifEmpty([])
 
     // Alignment
     cat_fastq(ch_reads)
@@ -416,7 +452,7 @@ workflow {
 
     // QC
     fastqc(cat_fastq.out)
-    picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat)
+    picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat, ch_rrna_intervals)
 
     // Assemble transcripts
     stringtie(ch_indexed_bam, ch_gtf)
