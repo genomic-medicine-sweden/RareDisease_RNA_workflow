@@ -139,6 +139,24 @@ process cat_fastq{
     """
 }
 
+process trim_galore{
+
+    input:
+	    tuple val(sample), file(r1), file(r2)
+
+    output:
+        tuple val(sample), file("${sample}_val_1.fq"), file("${sample}_val_2.fq"), emit: trimmed_fastq
+        tuple val(sample), file("${r1}_trimming_report.txt"), file("${r2}_trimming_report.txt"), emit: report
+
+    script:
+
+    """
+    trim_galore ${r1} ${r2} --paired --basename ${sample} 
+    """
+
+
+}
+
 process fastqc{
 
     input:
@@ -410,7 +428,8 @@ workflow {
 
     // Alignment
     cat_fastq(ch_reads)
-    STAR_Aln(cat_fastq.out, ch_star_index)
+    trim_galore(cat_fastq.out)
+    STAR_Aln(trim_galore.out.trimmed_fastq, ch_star_index)
     index_bam(STAR_Aln.out.bam)
     ch_indexed_bam = STAR_Aln.out.bam.join(index_bam.out)
 
@@ -435,6 +454,7 @@ workflow {
     // Combine metric output files to one channel for multiqc
     ch_multiqc_input = ch_reads.map{ it.first() }
     ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
+    ch_multiqc_input = ch_multiqc_input.join(trim_galore.out.report)
     ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
     ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
     ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
