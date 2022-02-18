@@ -39,6 +39,7 @@ ch_fai = file(params.fasta + '.fai')
 ch_dict = file("${ch_fasta.Parent}/${ch_fasta.SimpleName}.dict")
 ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file("${ch_gtf.Parent}/${ch_gtf.SimpleName}.refflat")
 ch_rrna_intervals = params.rrna_intervals ? file(params.rrna_intervals) : params.rrna_intervals
+ch_downsample_regions = params.downsample_regions ? file(params.downsample_regions) : params.downsample_regions
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
@@ -183,7 +184,7 @@ process trim_galore{
     script:
 
     """
-    trim_galore ${r1} ${r2} --paired --basename ${sample} 
+    trim_galore ${r1} ${r2} --paired --basename ${sample}
     """
 
 
@@ -217,7 +218,7 @@ process STAR_Aln{
         path star_index
 
     output:
-        tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam") , emit: bam
+        tuple val(sample), file("${sample}_sorted.bam") , emit: bam
         tuple val(sample), file("${sample}.ReadsPerGene.out.tab") , emit : counts
         tuple val(sample), file('*Log.out'), file('*Log.final.out'), file('*Log.progress.out') , emit: star_multiqc
 
@@ -231,7 +232,14 @@ process STAR_Aln{
          --outSAMattrRGline ID:${sample} PL:${params.platform} SM:${sample} \\
          --outFileNamePrefix ${sample}. \\
          --quantMode GeneCounts \\
-         --outSAMstrandField intronMotif
+         --outSAMstrandField intronMotif \\
+         --peOverlapNbasesMin 10 \\
+         --peOverlapMMp 0.1 \\
+         --chimSegmentMin 12 \\
+         --chimJunctionOverhangMin 12 \\
+         --chimOutType WithinBAM
+
+    mv ${sample}.Aligned.sortedByCoord.out.bam ${sample}_sorted.bam
     """
 }
 
@@ -321,6 +329,26 @@ process gffcompare{
     """
 }
 
+process filter_bam {
+
+    input:
+        tuple val(sample), path(bam), path(bai)
+        path regions
+
+    output:
+        tuple val(sample), path("*_filtered.bam"), path("*_filtered.bam.bai")
+
+    script:
+    def seed_frac = Math.floor(Math.random() * (100 - 1) + 1) + 0.001
+
+    """
+    samtools view --threads ${task.cpus} --bam --unoutput non_select.bam --target-file ${regions} ${bam} | \\
+    samtools view -s ${seed_frac} --threads ${task.cpus} --bam --output select.bam
+    samtools merge --threads ${task.cpus} -o ${sample}_filtered.bam non_select.bam select.bam
+    samtools index ${sample}_filtered.bam
+    """
+}
+
 process gatk_split{
 
     input:
@@ -330,10 +358,10 @@ process gatk_split{
         path dict
 
     output:
-        tuple val(sample), path("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), path("${sample}.RG.split.Aligned.sortedByCoord.out.bai")
+        tuple val(sample), path("${bam.baseName}_split.bam"), path("${bam.baseName}_split.bai")
 
     """
-    gatk SplitNCigarReads --tmp-dir ${params.tmpdir} -R ${fasta} -I ${bam} -O ${sample}.RG.split.Aligned.sortedByCoord.out.bam --create-output-bam-index
+    gatk SplitNCigarReads --tmp-dir ${params.tmpdir} -R ${fasta} -I ${bam} -O ${bam.baseName}_split.bam --create-output-bam-index
     """
 
 }
@@ -479,6 +507,7 @@ workflow {
 
 
     // ASE subworkflow
+    ch_indexed_bam = ch_downsample_regions ? filter_bam(ch_indexed_bam, ch_downsample_regions) : ch_indexed_bam
     gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
     gatk_haplotypecaller(gatk_split.out, ch_fasta, ch_fai, ch_dict)
     bcftools_compress_and_index(gatk_haplotypecaller.out)
