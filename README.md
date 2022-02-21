@@ -51,7 +51,11 @@ fasta : the reference fasta file
 
 gtf : gene annotations in gtf format
 
-strandedness : library strandedness <forward/reverse>, can be empty
+strandedness : library strandedness <forward/reverse>, optional
+
+rrna_intervals : file with rrna postions in interval_list format. If not provided one will be generated automatically from the gtf gene annotaion file
+
+downsample_regions : Bed file with regions to be downsampled prior to variant calling. Only 0.1% of the reads will be kept.
 ```
 
 The pipeline will automatically download and cache the singularity/docker images.
