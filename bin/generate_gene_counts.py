@@ -125,7 +125,8 @@ if __name__ == "__main__":
     in_dict = read_star_gene_cnts(args.sample, args.star, args.strandedness)
     if file_exist:
         transform_to_table(
-            pad_table(in_dict, read_existing_gene_cnts(file_exist), args.strandedness), args.output
+            pad_table(in_dict, read_existing_gene_cnts(file_exist), args.strandedness),
+            args.output,
         )
     else:
         transform_to_table(in_dict, args.output)
