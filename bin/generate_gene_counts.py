@@ -6,22 +6,31 @@ import os
 from collections import OrderedDict
 
 
-def read_star_gene_cnts(sample, star):
+translator = {
+    "unstranded": 1,
+    "forward": 2,
+    "reverse": 3,
+}
+
+
+def read_star_gene_cnts(sample, star, strandedness):
     """Read gene counts file from STAR output."""
     sample_ids = {}
     gene_ids = {}
+
     with open(star) as in_tab:
         for line in in_tab:
-            if line.startswith("ENSG"):
+            if not line.startswith("N_"):
                 gene_id = line.split()[0]
-                unstranded_cnt = line.split()[1]
-                gene_ids[gene_id] = int(unstranded_cnt)
+                strand = translator[strandedness]
+                counts = line.split()[strand]
+                gene_ids[gene_id] = int(counts)
     gene_ids = OrderedDict(sorted(gene_ids.items()))
     sample_ids[sample] = gene_ids
     return sample_ids
 
 
-def read_existing_gene_cnts(path_tsv):
+def read_existing_gene_cnts(path_tsv, strandedness):
     """Read existing gene counts file."""
     sample_ids = {}
     gene_ids = {}
@@ -31,8 +40,9 @@ def read_existing_gene_cnts(path_tsv):
                 sample = line.split()[-1]
             else:
                 gene_id = line.split()[0]
-                unstranded_cnt = line.split()[1]
-                gene_ids[gene_id] = int(unstranded_cnt)
+                strand = translator[strandedness]
+                counts = line.split()[strand]
+                gene_ids[gene_id] = int(counts)
     gene_ids = OrderedDict(sorted(gene_ids.items()))
     sample_ids[sample] = gene_ids
     return sample_ids
@@ -107,14 +117,15 @@ if __name__ == "__main__":
     )
     parser.add_argument("--star", type=str, help="*ReadsPerGene.out.tab from STAR")
     parser.add_argument("--sample", type=str, help="corresponding sample name")
+    parser.add_argument("--strandedness", type=str, help="strandedness of RNA")
     parser.add_argument("--output", type=str, help="output tsv file name")
 
     args = parser.parse_args()
     file_exist = file_exists("external_geneCounts.tsv")
-    in_dict = read_star_gene_cnts(args.sample, args.star)
+    in_dict = read_star_gene_cnts(args.sample, args.star, args.strandedness)
     if file_exist:
         transform_to_table(
-            pad_table(in_dict, read_existing_gene_cnts(file_exist)), args.output
+            pad_table(in_dict, read_existing_gene_cnts(file_exist), args.strandedness), args.output
         )
     else:
         transform_to_table(in_dict, args.output)
