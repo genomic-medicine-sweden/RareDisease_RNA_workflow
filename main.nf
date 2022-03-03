@@ -1,5 +1,6 @@
 #!/usr/bin/dev nextflow
 
+nextflow.enable.dsl=2
 params.help=false
 params.r1=false
 params.r2=false
@@ -14,122 +15,107 @@ if(params.help){
 
 }else if(params.r1 && params.r2 && params.sample){
 
-     reads_align=Channel.of( [params.sample, params.r1, params.r2] )
+     ch_reads = Channel.of( [params.sample, file(params.r1), file(params.r2)] )
+
 
 }else if (params.samplesheet){
     Channel
         .fromPath(params.samplesheet)
         .splitCsv(header:true)
         .map{ row-> tuple(row.id, file(row.read1), file(row.read2)) }
-        .set {reads_align}
+        .set { ch_reads }
 
 }else{
     println "Nope."
     exit 0
 }
 
-process STAR_Aln{
-    publishDir "${params.output}", mode: 'copy', overwrite: true
+// Initiate references
+ch_fasta = file(params.fasta)
+ch_star_index = file(params.star_index)
+ch_gtf = file(params.gtf)
+ch_fai = file(params.fasta + '.fai')
+ch_dict = file("${ch_fasta.Parent}/${ch_fasta.SimpleName}.dict")
+ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file("${ch_gtf.Parent}/${ch_gtf.SimpleName}.refflat")
+ch_rrna_intervals = params.rrna_intervals ? file(params.rrna_intervals) : params.rrna_intervals
+ch_downsample_regions = params.downsample_regions ? file(params.downsample_regions) : params.downsample_regions
 
-    input:
-	    tuple val(sample),val(r1),val(r2) from reads_align
-           
-    output:
-        tuple val(sample), file("${sample}.Aligned.sortedByCoord.out.bam"), file("${sample}.Aligned.sortedByCoord.out.bam.bai") into STAR_output
-        tuple val(sample), file("${sample}.ReadsPerGene.out.tab")
-        tuple val(sample), file('*Log.out'), file('*Log.final.out'), file('*Log.progress.out') into star_multiqc
+// Setup tempdir - can be overridden in config
+params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
+file(params.tmpdir).mkdir()
 
-    """
-    zcat ${r1} > R1.fastq
-    zcat ${r2} > R2.fastq
+// Import processes
+include {
+    untar_star_index;
+    gunzip_gtf;
+    index_fasta;
+    build_fasta_dict;
+    get_rrna_transcripts;
+    build_rrna_intervallist;
+    gtf2refflat;
+    cat_fastq;
+    trim_galore;
+    fastqc;
+    STAR_Aln;
+    index_bam;
+    picard_collectrnaseqmetrics;
+    stringtie;
+    gffcompare;
+    filter_bam;
+    gatk_split;
+    gatk_haplotypecaller;
+    bcftools_compress_and_index;
+    bcftools_compress_and_index as recompress_and_index_vcf;
+    bcftools_prep_vcf;
+    gatk_asereadcounter;
+    bootstrapann;
+    multiqc;
+} from './modules/main'
 
-    STAR --genomeDir ${params.STAR_ref_dir} \\
-         --readFilesIn R1.fastq R2.fastq\\
-         --twopassMode Basic \\
-         --outReadsUnmapped None \\
-         --runThreadN ${task.cpus} \\
-         --outSAMtype BAM SortedByCoordinate \\
-         --outSAMattrRGline ID:${sample} PL:${params.platform} SM:${sample} \\
-         --outFileNamePrefix ${sample}. \\
-         --quantMode GeneCounts \\
-         --outSAMstrandField intronMotif
+workflow {
 
-    samtools index ${sample}.Aligned.sortedByCoord.out.bam 
-    """
+    main:
 
-}
+    // Preprocess references
+    ch_star_index = untar_star_index(ch_star_index).ifEmpty(ch_star_index)
+    ch_gtf = gunzip_gtf(ch_gtf).ifEmpty(ch_gtf)
+    ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
+    ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
+    ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
+    ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf)).ifEmpty([])
 
-STAR_output.into {gatk_split_input; metrics_input}
+    // Alignment
+    cat_fastq(ch_reads)
+    trim_galore(cat_fastq.out)
+    STAR_Aln(trim_galore.out.trimmed_fastq, ch_star_index)
+    index_bam(STAR_Aln.out.bam)
+    ch_indexed_bam = STAR_Aln.out.bam.join(index_bam.out)
 
-process picard_collectrnaseqmetrics{
-    publishDir "${params.output}", mode: 'copy', overwrite: true
+    // QC
+    fastqc(cat_fastq.out)
+    picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat, ch_rrna_intervals)
 
-    input:
-        tuple val(sample), path(bam), path(bai) from metrics_input
-    
-    output:
-        tuple val(sample), path("${sample}_rna_metrics.txt") into metric_multiqc
+    // Assemble transcripts
+    stringtie(ch_indexed_bam, ch_gtf)
+    gffcompare(stringtie.out.gtf, ch_gtf)
 
-    """
-    picard CollectRnaSeqMetrics \\
-        --STRAND_SPECIFICITY ${params.strandedness} \\
-        --REF_FLAT ${params.annotation_refflat} \\
-        --INPUT ${bam} \\
-        --OUTPUT ${sample}_rna_metrics.txt \\
-    """
+    // ASE subworkflow
+    ch_indexed_bam = ch_downsample_regions ? filter_bam(ch_indexed_bam, ch_downsample_regions) : ch_indexed_bam
+    gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
+    gatk_haplotypecaller(gatk_split.out, ch_fasta, ch_fai, ch_dict)
+    bcftools_compress_and_index(gatk_haplotypecaller.out)
+    bcftools_prep_vcf(gatk_haplotypecaller.out)
+    gatk_asereadcounter(bcftools_prep_vcf.out, ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
+    bootstrapann(bcftools_compress_and_index.out, gatk_asereadcounter.out)
+    recompress_and_index_vcf(bootstrapann.out)
 
-}
-
-process gatk_split{
-
-    input:
-        tuple val(sample) , file(bam), file(bai) from gatk_split_input
-
-    output:
-        tuple val(sample), file("${sample}.RG.split.Aligned.sortedByCoord.out.bam"), file("${sample}.RG.split.Aligned.sortedByCoord.out.bai") into gatk_split_output
-
-    """
-    gatk SplitNCigarReads -R ${params.ref} -I ${bam} -O ${sample}.RG.split.Aligned.sortedByCoord.out.bam --create-output-bam-index
-    """
-
-}
-
-process GATK_ASE{
-    publishDir "${params.output}", mode: 'copy', overwrite: true
-
-    input:
-	        tuple val(sample) , file(bam),file(bai) from gatk_split_output
-
-    output:
-        tuple val(sample), file("${sample}.ase.vcf"), file("${sample}.GATKASE.csv") into gatk_hc
-
-//  TODO: Add bcftools to container
-    script:
-
-        """
-        gatk HaplotypeCaller -R ${params.ref} -I ${bam} -stand-call-conf 10 -O ${sample}.vcf --minimum-mapping-quality 10
-        bcftools view --genotype het --max-alleles --min-alleles 2 --types snps -O z -o {sample}.vcf.gz ${sample}.vcf
-        tabix -p vcf ${sample}.vcf.gz
-        gatk ASEReadCounter -R ${params.ref} -O ${sample}.GATKASE.csv -I ${bam} -V ${sample}.vcf.gz
-        python ${params.bootstrapann} --vcf ${sample}.vcf.gz --ase ${sample}.GATKASE.csv > ${sample}.ase.vcf
-        """
-
-}
-
-// Combine metric output files to one channel
-multiqc_input = star_multiqc.join(metric_multiqc).collect{it[1..-1]}
-
-process multiqc{
-    publishDir "${params.output}", mode: 'copy', overwrite: true
-    
-    input: 
-        //tuple val(sample), file(picard_metrics) from metric_multiqc
-        path(qc_files) from multiqc_input
-
-    output:
-        path "*multiqc_report.html"
-        path "*_data"
-    """
-    multiqc .
-    """
+    // Combine metric output files to one channel for multiqc
+    ch_multiqc_input = ch_reads.map{ it.first() }
+    ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
+    ch_multiqc_input = ch_multiqc_input.join(trim_galore.out.report)
+    ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
+    ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
+    ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
+    ch_multiqc_input = ch_multiqc_input.collect{it[1..-1]}
+    multiqc(ch_multiqc_input)
 }

@@ -1,60 +1,83 @@
+[![CI test](https://github.com/genomic-medicine-sweden/RareDisease_RNA_workflow/actions/workflows/ci_test.yml/badge.svg?branch=main)](https://github.com/genomic-medicine-sweden/RareDisease_RNA_workflow/actions/workflows/ci_test.yml)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A521.10.3-brightgreen.svg)](https://www.nextflow.io/)
+[![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
+[![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
+
 # RareDisease_RNA_workflow
 
 nextflow main.nf --help
 
+To test the pipeline run:
+
+```Console
+nextflow main.nf -profile test,<singularity/docker>
+```
+
 run a single sample:
 
-	nextflow main.nf -profile singularity --r1 read1.fq.gz --r2 read2.fq.gz --sample sampleID --output output_directory -c config.conf
+```Console
+nextflow main.nf -profile singularity --r1 read1.fq.gz --r2 read2.fq.gz --sample sampleID --output output_directory
+```
 
 run a single sample with multiple fastq files
 
-	nextflow main.nf -profile singularity --r1 "folder/*R1*.fq.gz" --r2 "folder/*R2*.fq.gz" --sample sampleID --output output_directory -c config.conf
+```Console
+nextflow main.nf -profile singularity --r1 "folder/*R1*.fq.gz" --r2 "folder/*R2*.fq.gz" --sample sampleID --output output_directory
+```
 
 NOTE: you need to add quotation marks around the search pattern
 
 run all samples in a samplesheet:
 
-	nextflow main.nf -profile singularity --samplesheet sample.csv --output output_directory -c config.conf
+```Console
+nextflow main.nf -profile singularity --samplesheet sample.csv --output output_directory
+```
 
-the samplesheet is a comma-separated file with the following header:
+The samplesheet is a comma-separated file with the following header:
 
-	sample,r1,r2
+```Console
+id,r1,r2
+```
 
-The sample, r1 and r2 are mandatory, the vcf column may be left empty	
-
-# setup
+## Setup
 Modify the config file:
 
-    reference_dir : specify the folder with all your references 
+```
+reference_dir : specify the folder with all your references
 
-	STAR_ref_dir : the star reference index folder
+star_index : the star reference index folder
 
-	ref :the reference fasta file (dict and fai file required)
+fasta : the reference fasta file
 
-The pipeline will automatically download and cache the latest singularity image. 
+gtf : gene annotations in gtf format
 
-Alternatively you can download the singularity collection:
+strandedness : library strandedness <forward/reverse>, optional
 
-	singularity pull shub://J35P312/RareDisease_RNA_workflow
+rrna_intervals : file with rrna postions in interval_list format. If not provided one will be generated automatically from the gtf gene annotaion file
 
-Or install all dependencies, as listed in dependencies
+downsample_regions : Bed file with regions to be downsampled prior to variant calling. Only 0.1% of the reads will be kept.
+```
 
-# dependencies
-When using singularity:
+The pipeline will automatically download and cache the singularity/docker images.
+
+You can also install all dependencies, as listed in dependencies
+
+## Dependencies
+When using singularity/docker:
 
 	nextflow
-	singularity
+	singularity/docker
 
 otherwise:
 
 	nextflow
+	bcftools
+    BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
+	fastQC
+	gatk
+	gffcompare
+	multiQC
+	picard
 	samtools
 	STAR
-	gatk
 	stringtie
-	picard
-	multiQC
-	fastQC
-    BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
-    ucsc-wigtobigwig
-
