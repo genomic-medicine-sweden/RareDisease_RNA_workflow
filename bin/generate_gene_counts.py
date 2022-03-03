@@ -17,7 +17,6 @@ def read_star_gene_cnts(sample, star, strandedness):
     """Read gene counts file from STAR output."""
     sample_ids = {}
     gene_ids = {}
-
     with open(star) as in_tab:
         for line in in_tab:
             if not line.startswith("N_"):
@@ -30,21 +29,21 @@ def read_star_gene_cnts(sample, star, strandedness):
     return sample_ids
 
 
-def read_existing_gene_cnts(path_tsv, strandedness):
+def read_existing_gene_cnts(path_tsv):
     """Read existing gene counts file."""
     sample_ids = {}
     gene_ids = {}
     with open(path_tsv) as in_tsv:
         for line in in_tsv:
             if line.startswith("GeneID"):
-                sample = line.split()[-1]
+                samples = line.split()[1:]
             else:
                 gene_id = line.split()[0]
-                strand = translator[strandedness]
-                counts = line.split()[strand]
-                gene_ids[gene_id] = int(counts)
-    gene_ids = OrderedDict(sorted(gene_ids.items()))
-    sample_ids[sample] = gene_ids
+                counts = line.split()[1:]
+
+                for idx, cnt in enumerate(counts):
+                    gene_ids[gene_id] = int(cnt)
+                    sample_ids[samples[idx]] = gene_ids
     return sample_ids
 
 
@@ -124,8 +123,9 @@ if __name__ == "__main__":
     file_exist = file_exists("external_geneCounts.tsv")
     in_dict = read_star_gene_cnts(args.sample, args.star, args.strandedness)
     if file_exist:
+        read_existing_gene_cnts(file_exist)
         transform_to_table(
-            pad_table(in_dict, read_existing_gene_cnts(file_exist), args.strandedness),
+            pad_table(in_dict, read_existing_gene_cnts(file_exist)),
             args.output,
         )
     else:
