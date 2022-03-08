@@ -13,7 +13,7 @@ d = {
     "PAIRED_END": "",
     "COUNT_MODE": "",
     "COUNT_OVERLAPS": "",
-    "STRAND": "no",
+    "STRAND": "",
     "HPO_TERMS": "",
     "GENE_COUNTS_FILE": "",
     "GENE_ANNOTATION": "",
