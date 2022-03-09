@@ -4,47 +4,53 @@ import argparse
 import os
 import csv
 
-d = {
-    "RNA_ID": "",
-    "RNA_BAM_FILE": "",
-    "DNA_VCF_FILE": "",
-    "DNA_ID": "",
-    "DROP_GROUP": "blood",
-    "PAIRED_END": "",
-    "COUNT_MODE": "",
-    "COUNT_OVERLAPS": "",
-    "STRAND": "",
-    "HPO_TERMS": "",
-    "GENE_COUNTS_FILE": "",
-    "GENE_ANNOTATION": "",
-    "GENOME": "",
-}
 
+class SampleAnnotation:
+    """SampleAnnotation class"""
 
-def populate_dictionary(rna_id, cnts):
+    SAMPLE_ANNOTATION_COLUMNS = [
+        "RNA_ID",
+        "RNA_BAM_FILE",
+        "DNA_VCF_FILE",
+        "DNA_ID",
+        "DROP_GROUP",
+        "PAIRED_END",
+        "COUNT_MODE",
+        "COUNT_OVERLAPS",
+        "STRAND",
+        "HPO_TERMS",
+        "GENE_COUNTS_FILE",
+        "GENE_ANNOTATION",
+        "GENOME",
+    ]
 
-    master_dict = {}
-    for i, rna in enumerate(rna_id):
-        temp_d = d.copy()
-        temp_d["RNA_ID"] = rna
+    def __init__(self, cnts_file, out_file):
+        """Create SampleAnnotation given the parameters"""
+        self.cnts_file = cnts_file
+        self.out_file = out_file
 
-        if cnts:
-            temp_d["GENE_COUNTS_FILE"] = cnts
-            temp_d["GENE_ANNOTATION"] = "hg38"
+    def parse_header(self) -> list[str]:
+        """Parse the first line of gene counts file"""
+        header = []
+        with open(self.cnts_file) as file_object:
+            header = file_object.readline().split()
 
-        master_dict[i] = temp_d
+        del header[0]  # remove GeneID field
+        return header
 
-    return master_dict
+    def write_table(self):
+        with open(self.out_file, "w") as tsv_file:
+            fieldnames = self.SAMPLE_ANNOTATION_COLUMNS
+            sample_ids = self.parse_header()
+            writer = csv.DictWriter(tsv_file, fieldnames=fieldnames, delimiter="\t")
 
-
-def write_table(dict, outfile):
-    with open(outfile, "w", newline="") as tsvfile:
-        header = dict[0].keys()
-        writer = csv.DictWriter(tsvfile, fieldnames=header, delimiter="\t")
-
-        writer.writeheader()
-        for index in dict:
-            writer.writerow(dict[index])
+            writer.writeheader()
+            for id in sample_ids:
+                sa_dict = {}.fromkeys(fieldnames, "")
+                sa_dict["RNA_ID"] = id
+                sa_dict["DROP_GROUP"] = "blood"
+                sa_dict["GENE_COUNTS_FILE"] = os.path.basename(self.cnts_file)
+                writer.writerow(sa_dict)
 
 
 if __name__ == "__main__":
@@ -53,9 +59,6 @@ if __name__ == "__main__":
         description="""Generate sample annotation file for DROP.""",
     )
 
-    parser.add_argument(
-        "--samples", type=str, help="A list of RNA sample names delimited by space."
-    )
     parser.add_argument(
         "--counts",
         type=str,
@@ -68,6 +71,5 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    sample_list = [str(item) for item in args.samples.split()]
 
-    write_table(populate_dictionary(sample_list, args.counts), args.output)
+    SampleAnnotation(args.counts, args.output).write_table()
