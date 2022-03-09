@@ -39,6 +39,7 @@ class SampleAnnotation:
         return header
 
     def write_table(self):
+        """Write the Sample Annotation tsv file"""
         with open(self.out_file, "w") as tsv_file:
             fieldnames = self.SAMPLE_ANNOTATION_COLUMNS
             sample_ids = self.parse_header()
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--counts",
+        "--count_file",
         type=str,
         help="A tsv file of gene counts for all processed samples.",
     )
