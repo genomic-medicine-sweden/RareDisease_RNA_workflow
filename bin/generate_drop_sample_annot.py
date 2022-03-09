@@ -73,4 +73,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    SampleAnnotation(args.counts, args.output).write_table()
+    SampleAnnotation(args.count_file, args.output).write_table()
