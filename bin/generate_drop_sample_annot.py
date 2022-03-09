@@ -49,7 +49,7 @@ class SampleAnnotation:
             for id in sample_ids:
                 sa_dict = {}.fromkeys(fieldnames, "")
                 sa_dict["RNA_ID"] = id
-                sa_dict["DROP_GROUP"] = "blood"
+                sa_dict["DROP_GROUP"] = "outrider"
                 sa_dict["GENE_COUNTS_FILE"] = os.path.basename(self.cnts_file)
                 writer.writerow(sa_dict)
 
