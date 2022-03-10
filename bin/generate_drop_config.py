@@ -1,5 +1,11 @@
-import requests
+import os
+import yaml
 
-url = "https://raw.githubusercontent.com/gagneurlab/drop/dev/drop/template/config.yaml"
 
-response = requests.get(url)
+def read_config(in_yaml):
+    with open(in_yaml) as file_obj:
+        config_drop = yaml.safe_load(file_obj)
+    return config_drop
+
+
+print(read_config("../resources/config.yaml"))
