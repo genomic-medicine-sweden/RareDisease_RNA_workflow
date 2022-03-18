@@ -362,7 +362,6 @@ process bcftools_prep_vcf{
     """
 }
 
-
 process gatk_asereadcounter{
 
     input:
@@ -394,6 +393,40 @@ process bootstrapann{
 
     """
     BootstrapAnn.py --vcf ${vcf} --ase ${csv} > ${sample}_ase.vcf
+    """
+}
+
+process vep{
+
+    input:
+        tuple val(sample), path(vcf)
+        path fasta
+        path fai
+        path cache
+
+    output:
+        tuple val(sample), path("${sample}_ann.vcf"), emit: vcf
+        tuple val(sample), path("*_ann.html"), emit: html
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
+        def args = task.ext.args ?: ''
+
+    """
+    vep \\
+        --input_file ${vcf} \\
+        --output_file ${sample}_ann.vcf \\
+        --fork ${task.cpus} \\
+        --dir_cache ${cache} \\
+        --cache \\
+        --vcf \\
+        --stats_file ${sample}_ann.html \\
+        --merged \\
+        --compress_output bgzip \\
+        --offline \\
+        ${args}
     """
 }
 

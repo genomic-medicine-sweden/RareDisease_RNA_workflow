@@ -39,6 +39,7 @@ ch_dict = file("${ch_fasta.Parent}/${ch_fasta.SimpleName}.dict")
 ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file("${ch_gtf.Parent}/${ch_gtf.SimpleName}.refflat")
 ch_rrna_intervals = params.rrna_intervals ? file(params.rrna_intervals) : params.rrna_intervals
 ch_downsample_regions = params.downsample_regions ? file(params.downsample_regions) : params.downsample_regions
+ch_vep_cache = file(params.vep_cache)
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
@@ -69,6 +70,7 @@ include {
     bcftools_prep_vcf;
     gatk_asereadcounter;
     bootstrapann;
+    vep;
     multiqc;
 } from './modules/main'
 
@@ -107,7 +109,11 @@ workflow {
     bcftools_prep_vcf(gatk_haplotypecaller.out)
     gatk_asereadcounter(bcftools_prep_vcf.out, ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
     bootstrapann(bcftools_compress_and_index.out, gatk_asereadcounter.out)
-    recompress_and_index_vcf(bootstrapann.out)
+    vep(bootstrapann.out, ch_fasta, ch_fai, ch_vep_cache)
+    /* TODO: pass the bootstrapann vcf file to recompress and index in the case when
+        we don't run VEP. Also the multiqc part will need to be fixed
+    */
+    recompress_and_index_vcf(vep.out.vcf)
 
     // Combine metric output files to one channel for multiqc
     ch_multiqc_input = ch_reads.map{ it.first() }
@@ -116,6 +122,7 @@ workflow {
     ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
     ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
     ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
+    ch_multiqc_input = ch_multiqc_input.join(vep.out.html)
     ch_multiqc_input = ch_multiqc_input.collect{it[1..-1]}
     multiqc(ch_multiqc_input)
 }
