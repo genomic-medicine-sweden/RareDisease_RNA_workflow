@@ -222,7 +222,7 @@ process generate_gene_counts4drop{
 		--star $counts \\
 		--sample $sample \\
 		--strandedness $params.strandedness \\
-		--output $processed_gene_counts \\
+		--output external_geneCounts.tsv \\
 	"""
 }
 
