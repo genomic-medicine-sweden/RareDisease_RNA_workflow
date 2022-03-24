@@ -59,6 +59,7 @@ include {
     fastqc;
     STAR_Aln;
     index_bam;
+    generate_gene_counts4drop;
     picard_collectrnaseqmetrics;
     stringtie;
     gffcompare;
