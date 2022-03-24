@@ -102,6 +102,9 @@ workflow {
     stringtie(ch_indexed_bam, ch_gtf)
     gffcompare(stringtie.out.gtf, ch_gtf)
 
+    // Ready files for DROP tool
+    generate_gene_counts4drop(STAR_Aln.out.counts)
+
     // ASE subworkflow
     ch_indexed_bam = ch_downsample_regions ? filter_bam(ch_indexed_bam, ch_downsample_regions) : ch_indexed_bam
     gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
