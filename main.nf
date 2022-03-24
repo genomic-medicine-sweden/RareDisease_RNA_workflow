@@ -60,6 +60,7 @@ include {
     STAR_Aln;
     index_bam;
     generate_gene_counts4drop;
+    generate_SA4drop;
     picard_collectrnaseqmetrics;
     stringtie;
     gffcompare;
@@ -104,6 +105,8 @@ workflow {
 
     // Ready files for DROP tool
     generate_gene_counts4drop(STAR_Aln.out.counts)
+    final_gene_table = generate_gene_counts4drop.out.processed_gene_counts.collect()
+    generate_SA4drop(final_gene_table)
 
     // ASE subworkflow
     ch_indexed_bam = ch_downsample_regions ? filter_bam(ch_indexed_bam, ch_downsample_regions) : ch_indexed_bam
