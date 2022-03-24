@@ -218,7 +218,7 @@ process generate_gene_counts4drop{
 		tuple val(sample), path('external_geneCounts.tsv'), emit: processed_gene_counts
 
 	"""
-	$baseDir/bin/generate_gene_counts.py \\
+	generate_gene_counts.py \\
 		--star $counts \\
 		--sample $sample \\
 		--strandedness $params.strandedness \\
