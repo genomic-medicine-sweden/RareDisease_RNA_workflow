@@ -215,7 +215,7 @@ process generate_gene_counts4drop{
 		tuple val(sample), path(counts)
 
 	output:
-		tuple val(sample), path('external_geneCounts.tsv'), emit: processed_gene_counts
+		path('external_geneCounts.tsv'), emit: processed_gene_counts
 
 	"""
 	generate_gene_counts.py \\
