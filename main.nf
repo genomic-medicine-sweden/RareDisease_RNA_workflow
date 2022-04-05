@@ -98,7 +98,7 @@ workflow {
     fastqc(cat_fastq.out)
     picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat, ch_rrna_intervals)
 
-    Assemble transcripts
+    // Assemble transcripts
     stringtie(ch_indexed_bam, ch_gtf)
     gffcompare(stringtie.out.gtf, ch_gtf)
 
