@@ -3,7 +3,9 @@
 import argparse
 import csv
 import os
+from pathlib import Path
 from collections import OrderedDict
+import re
 
 
 translator = {
@@ -13,8 +15,8 @@ translator = {
 }
 
 
-def read_star_gene_cnts(sample, star, strandedness):
-    """Read gene counts file from STAR output."""
+def read_star_gene_cnts(sample: str, star: Path, strandedness: str) -> dict:
+    """Read gene count file(s) from STAR output."""
     sample_ids = {}
     gene_ids = {}
     with open(star) as in_tab:
@@ -114,19 +116,34 @@ if __name__ == "__main__":
         formatter_class=argparse.MetavarTypeHelpFormatter,
         description="""Generate collated gene counts from each STAR output.""",
     )
-    parser.add_argument("--star", type=str, help="*ReadsPerGene.out.tab from STAR")
-    parser.add_argument("--sample", type=str, help="corresponding sample name")
+    parser.add_argument(
+        "--star", type=str, nargs="+", help="*ReadsPerGene.out.tab from STAR"
+    )
+    parser.add_argument(
+        "--sample", type=str, nargs="+", help="corresponding sample name"
+    )
     parser.add_argument("--strandedness", type=str, help="strandedness of RNA")
     parser.add_argument("--output", type=str, help="output tsv file name")
 
     args = parser.parse_args()
-    file_exist = file_exists("external_geneCounts.tsv")
-    in_dict = read_star_gene_cnts(args.sample, args.star, args.strandedness)
-    if file_exist:
-        read_existing_gene_cnts(file_exist)
-        transform_to_table(
-            pad_table(in_dict, read_existing_gene_cnts(file_exist)),
-            args.output,
+    # file_exist = file_exists("external_geneCounts.tsv")
+    # in_dict = read_star_gene_cnts(args.sample, args.star, args.strandedness)
+    # if file_exist:
+    #     read_existing_gene_cnts(file_exist)
+    #     transform_to_table(
+    #         pad_table(in_dict, read_existing_gene_cnts(file_exist)),
+    #         args.output,
+    #     )
+    # else:
+    #     transform_to_table(in_dict, args.output)
+
+    master_dict = {}
+    for index, sample_id in enumerate(args.sample):
+        sample_id = re.sub(r"[\[\],]", "", sample_id)
+        master_dict.update(
+            read_star_gene_cnts(
+                sample=sample_id, star=args.star[index], strandedness=args.strandedness
+            )
         )
-    else:
-        transform_to_table(in_dict, args.output)
+
+    transform_to_table(master_dict, args.output)
