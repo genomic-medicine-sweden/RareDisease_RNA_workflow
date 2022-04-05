@@ -212,7 +212,8 @@ process index_bam{
 process generate_gene_counts4drop{
 
 	input:
-		tuple val(sample), path(counts)
+		path counts
+        val samples
 
 	output:
 		path('external_geneCounts.tsv'), emit: processed_gene_counts
@@ -220,7 +221,7 @@ process generate_gene_counts4drop{
 	"""
 	generate_gene_counts.py \\
 		--star $counts \\
-		--sample $sample \\
+		--sample $samples \\
 		--strandedness $params.strandedness \\
 		--output external_geneCounts.tsv \\
 	"""
