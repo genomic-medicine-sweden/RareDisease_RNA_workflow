@@ -227,6 +227,21 @@ process generate_gene_counts4drop{
 	"""
 }
 
+process generate_SA4drop{
+
+	input:
+		path(processed_gene_counts)
+
+	output:
+		path('sample_annotation.tsv'), emit: sample_annotation_drop
+
+	"""
+	generate_drop_sample_annot.py \\
+		--count_file $processed_gene_counts \\
+		--output sample_annotation.tsv \\
+	"""
+}
+
 process picard_collectrnaseqmetrics{
 
     input:
