@@ -209,6 +209,39 @@ process index_bam{
     """
 }
 
+process generate_gene_counts4drop{
+
+	input:
+		path counts
+        val samples
+
+	output:
+		path('external_geneCounts.tsv'), emit: processed_gene_counts
+
+	"""
+	generate_gene_counts.py \\
+		--star $counts \\
+		--sample $samples \\
+		--strandedness $params.strandedness \\
+		--output external_geneCounts.tsv \\
+	"""
+}
+
+process generate_SA4drop{
+
+	input:
+		path(processed_gene_counts)
+
+	output:
+		path('sample_annotation.tsv'), emit: sample_annotation_drop
+
+	"""
+	generate_drop_sample_annot.py \\
+		--count_file $processed_gene_counts \\
+		--output sample_annotation.tsv \\
+	"""
+}
+
 process picard_collectrnaseqmetrics{
 
     input:
