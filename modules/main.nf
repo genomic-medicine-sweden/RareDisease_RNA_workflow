@@ -242,6 +242,23 @@ process generate_SA4drop{
 	"""
 }
 
+process generate_config4drop{
+
+    input:
+        val fasta
+        val gtf
+    
+    output:
+        path('config.yaml'), emit: config_drop
+
+    """
+    generate_drop_config.py \\
+        --genome_fasta \$(basename $fasta) \\
+        --gtf \$(basename $gtf) \\
+        --output config.yaml
+    """
+}
+
 process picard_collectrnaseqmetrics{
 
     input:
