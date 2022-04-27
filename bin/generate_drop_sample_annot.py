@@ -51,6 +51,7 @@ class SampleAnnotation:
                 sa_dict["RNA_ID"] = id
                 sa_dict["DROP_GROUP"] = "outrider"
                 sa_dict["GENE_COUNTS_FILE"] = os.path.basename(self.cnts_file)
+                sa_dict["GENE_ANNOTATION"] = "v37"
                 writer.writerow(sa_dict)
 
 
