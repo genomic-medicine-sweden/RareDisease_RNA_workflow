@@ -40,6 +40,7 @@ ch_refflat = params.annotation_refflat ? file(params.annotation_refflat) : file(
 ch_rrna_intervals = params.rrna_intervals ? file(params.rrna_intervals) : params.rrna_intervals
 ch_downsample_regions = params.downsample_regions ? file(params.downsample_regions) : params.downsample_regions
 ch_vep_cache = file(params.vep_cache)
+ch_reference_cnts = params.reference_count_file ? file(params.reference_count_file) : []
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
@@ -47,34 +48,34 @@ file(params.tmpdir).mkdir()
 
 // Import processes
 include {
-    untar_star_index;
-    gunzip_gtf;
-    index_fasta;
-    build_fasta_dict;
-    get_rrna_transcripts;
-    build_rrna_intervallist;
-    gtf2refflat;
-    cat_fastq;
-    trim_galore;
-    fastqc;
-    STAR_Aln;
-    index_bam;
-    generate_gene_counts4drop;
-    generate_SA4drop;
-    generate_config4drop
-    picard_collectrnaseqmetrics;
-    stringtie;
-    gffcompare;
-    filter_bam;
-    gatk_split;
-    gatk_haplotypecaller;
-    bcftools_compress_and_index;
     bcftools_compress_and_index as recompress_and_index_vcf;
+    bcftools_compress_and_index;
     bcftools_prep_vcf;
-    gatk_asereadcounter;
     bootstrapann;
-    vep;
+    build_fasta_dict;
+    build_rrna_intervallist;
+    cat_fastq;
+    drop_aberrant_expression;
+    fastqc;
+    filter_bam;
+    gatk_asereadcounter;
+    gatk_haplotypecaller;
+    gatk_split;
+    generate_SA4drop;
+    generate_gene_counts4drop;
+    get_rrna_transcripts;
+    gffcompare;
+    gtf2refflat;
+    gunzip_gtf;
+    index_bam;
+    index_fasta;
     multiqc;
+    picard_collectrnaseqmetrics;
+    STAR_Aln;
+    stringtie;
+    trim_galore;
+    untar_star_index;
+    vep;
 } from './modules/main'
 
 workflow {
@@ -107,11 +108,17 @@ workflow {
     // Ready files for DROP tool
     STAR_Aln.out.counts.collect{ sample, cnt_file -> sample }.set{ ch_sample_collect }
     STAR_Aln.out.counts.collect{ sample, cnt_file -> cnt_file }.set{ ch_cnts_collect }
-    generate_gene_counts4drop(ch_cnts_collect, ch_sample_collect)
 
-    generate_SA4drop( generate_gene_counts4drop.out.processed_gene_counts )
-
-    generate_config4drop( params.fasta, params.gtf )
+    // Drop
+    generate_gene_counts4drop(ch_cnts_collect, ch_sample_collect, ch_gtf, ch_reference_cnts)
+    generate_SA4drop( generate_gene_counts4drop.out.processed_gene_counts, params.gtf, [] )
+    drop_aberrant_expression(
+        generate_SA4drop.out.sample_annotation_drop,
+        generate_gene_counts4drop.out.processed_gene_counts,
+        ch_reference_cnts,
+        ch_fasta,
+        ch_gtf
+    )
 
     // ASE subworkflow
     ch_indexed_bam = ch_downsample_regions ? filter_bam(ch_indexed_bam, ch_downsample_regions) : ch_indexed_bam

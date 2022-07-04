@@ -42,23 +42,17 @@ id,r1,r2
 ## Setup
 Modify the config file:
 
-```
-reference_dir : specify the folder with all your references
-
-star_index : the star reference index folder
-
-fasta : the reference fasta file
-
-gtf : gene annotations in gtf format
-
-strandedness : library strandedness <forward/reverse>, optional
-
-rrna_intervals : file with rrna postions in interval_list format. If not provided one will be generated automatically from the gtf gene annotaion file
-
-downsample_regions : Bed file with regions to be downsampled prior to variant calling. Only 0.1% of the reads will be kept.
-
-vep_cache : path to vep cache for offline use
-```
+| Parameter | Description |
+| --- | ---|
+| reference_dir | specify the folder with all your references |
+| star_index  |  the star reference index folder |
+| fasta | the reference fasta file |
+| gtf |  gene annotations in gtf format |
+| strandedness |  library strandedness <forward/reverse>, optional |
+| rrna_intervals | file with rrna postions in interval_list format. If not provided one will be generated automatically from the gtf gene annotaion file |
+| downsample_regions | bed file with regions to be downsampled prior to variant calling. Only 0.1% of the reads will be kept |
+| vep_cache | path to vep cache for offline use |
+| reference_count_file | File with reference gene counts for aberrant expression analysis (drop) |
 
 The pipeline will automatically download and cache the singularity/docker images.
 
@@ -75,6 +69,7 @@ otherwise:
 	nextflow
 	bcftools
     BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
+	drop
 	fastQC
 	gatk
 	gffcompare
