@@ -44,7 +44,7 @@ id,r1,r2
 You can setup a custom config to facilitate running the pipeline on your local cluster. Here's how to run the pipeline with the pipeline on the Clinical Genomics Stockholm cluster called hasta with development priority.
 
 ```Console
-nextflow main.nf -profile singularity,hasta,dev_pri --samplesheet sample.csv --output output_directory
+nextflow main.nf -profile singularity,hasta,dev_prio --samplesheet sample.csv --output output_directory
 ```
 
 ## Setup
