@@ -214,48 +214,74 @@ process generate_gene_counts4drop{
 	input:
 		path counts
         val samples
+        path gtf
+        path reference_count_file
 
 	output:
-		path('external_geneCounts.tsv'), emit: processed_gene_counts
+		path('processed_geneCounts.tsv'), emit: processed_gene_counts
+
+    script:
+        def ref_counts = reference_count_file ? "--ref_count_file $reference_count_file" : ""
 
 	"""
 	generate_gene_counts.py \\
 		--star $counts \\
 		--sample $samples \\
 		--strandedness $params.strandedness \\
-		--output external_geneCounts.tsv \\
+        $ref_counts \\
+		--output processed_geneCounts.tsv \\
+        --gtf $gtf \\
 	"""
 }
 
 process generate_SA4drop{
 
 	input:
-		path(processed_gene_counts)
+		path processed_gene_counts
+        path gtf
+        path reference_count_file
 
 	output:
 		path('sample_annotation.tsv'), emit: sample_annotation_drop
 
+    script:
+        def ref_counts = reference_count_file ? "--ref_count_file $reference_count_file" : ""
+
 	"""
 	generate_drop_sample_annot.py \\
 		--count_file $processed_gene_counts \\
+        --gtf \$(basename $gtf) \\
+        $ref_counts \\
 		--output sample_annotation.tsv \\
 	"""
 }
 
-process generate_config4drop{
+process drop_aberrant_expression{
+
+    beforeScript 'TMPDIR=\$PWD'
 
     input:
-        val fasta
-        val gtf
-    
+        path sample_annotation
+        path gene_counts
+        path reference_count_file
+        path fasta
+        path gtf
+
     output:
         path('config.yaml'), emit: config_drop
+        path('output'), emit: drop_ae_out
 
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
     """
+    drop init
     generate_drop_config.py \\
         --genome_fasta \$(basename $fasta) \\
         --gtf \$(basename $gtf) \\
         --output config.yaml
+    snakemake aberrantExpression --cores ${task.cpus}
     """
 }
 
