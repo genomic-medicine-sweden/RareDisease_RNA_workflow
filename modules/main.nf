@@ -139,8 +139,15 @@ process trim_galore{
 
     script:
 
+    def cores = 1
+    if (task.cpus) {
+        cores = (task.cpus as int) - 4
+        if (cores < 1) cores = 1
+        if (cores > 4) cores = 4
+    }
+
     """
-    trim_galore ${r1} ${r2} --paired --basename ${sample}
+    trim_galore ${r1} ${r2} --paired --basename ${sample} --cores $cores
     """
 }
 
@@ -433,7 +440,7 @@ process bcftools_prep_vcf{
         tuple val(sample), path("${sample}_biallelic.vcf.gz"), path("${sample}_biallelic.vcf.gz.tbi")
 
     """
-    bcftools view --genotype het --max-alleles 2 --min-alleles 2 --types snps -O z -o ${sample}_biallelic.vcf.gz ${sample}.vcf
+    bcftools view --threads ${task.cpus} --genotype het --max-alleles 2 --min-alleles 2 --types snps -O z -o ${sample}_biallelic.vcf.gz ${sample}.vcf
     bcftools index --tbi ${sample}_biallelic.vcf.gz
     """
 }
