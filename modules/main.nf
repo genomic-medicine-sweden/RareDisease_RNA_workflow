@@ -178,7 +178,7 @@ process STAR_Aln{
         path star_index
 
     output:
-        tuple val(sample), file("${sample}_sorted.bam") , emit: bam
+        tuple val(sample), file("${sample}.bam") , emit: bam
         tuple val(sample), file("${sample}.ReadsPerGene.out.tab") , emit : counts
         tuple val(sample), file('*Log.out'), file('*Log.final.out'), file('*Log.progress.out') , emit: star_multiqc
 
@@ -199,7 +199,7 @@ process STAR_Aln{
          --chimJunctionOverhangMin 12 \\
          --chimOutType WithinBAM
 
-    mv ${sample}.Aligned.sortedByCoord.out.bam ${sample}_sorted.bam
+    mv ${sample}.Aligned.sortedByCoord.out.bam ${sample}.bam
     """
 }
 
