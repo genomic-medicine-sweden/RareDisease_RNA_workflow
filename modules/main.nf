@@ -227,6 +227,9 @@ process generate_gene_counts4drop{
 	output:
 		path('processed_geneCounts.tsv'), emit: processed_gene_counts
 
+    when:
+        task.ext.when == null || task.ext.when
+
     script:
         def ref_counts = reference_count_file ? "--ref_count_file $reference_count_file" : ""
 
@@ -250,6 +253,9 @@ process generate_SA4drop{
 
 	output:
 		path('sample_annotation.tsv'), emit: sample_annotation_drop
+
+    when:
+        task.ext.when == null || task.ext.when
 
     script:
         def ref_counts = reference_count_file ? "--ref_count_file $reference_count_file" : ""
@@ -414,6 +420,24 @@ process gatk_haplotypecaller{
 
     """
     gatk HaplotypeCaller --tmp-dir ${params.tmpdir} -R ${fasta} -I ${bam} -stand-call-conf 10 -O ${sample}.vcf --minimum-mapping-quality 10
+    """
+}
+
+process bcftools_variantcall{
+
+    input:
+        tuple val(sample), path(bam), path(bai)
+        path fasta
+        path fai
+
+    output:
+        tuple val(sample), path("${sample}.vcf")
+
+    script:
+
+    """
+    bcftools mpileup --fasta-ref ${fasta} --output-type u  --max-depth 20000 ${bam} | \\
+    bcftools call --pval-threshold 0.01  -mv --output-type v --threads ${task.cpus} --output ${sample}.vcf
     """
 }
 

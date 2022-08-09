@@ -51,6 +51,7 @@ include {
     bcftools_compress_and_index as recompress_and_index_vcf;
     bcftools_compress_and_index;
     bcftools_prep_vcf;
+    bcftools_variantcall;
     bootstrapann;
     build_fasta_dict;
     build_rrna_intervallist;
@@ -113,19 +114,28 @@ workflow {
     generate_gene_counts4drop(ch_cnts_collect, ch_sample_collect, ch_gtf, ch_reference_cnts)
     generate_SA4drop( generate_gene_counts4drop.out.processed_gene_counts, params.gtf, [] )
     drop_aberrant_expression(
-        generate_SA4drop.out.sample_annotation_drop,
-        generate_gene_counts4drop.out.processed_gene_counts,
-        ch_reference_cnts,
-        ch_fasta,
-        ch_gtf
+       generate_SA4drop.out.sample_annotation_drop,
+       generate_gene_counts4drop.out.processed_gene_counts,
+       ch_reference_cnts,
+       ch_fasta,
+       ch_gtf
     )
 
     // ASE subworkflow
     ch_indexed_bam = ch_downsample_regions ? filter_bam(ch_indexed_bam, ch_downsample_regions) : ch_indexed_bam
     gatk_split(ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
-    gatk_haplotypecaller(gatk_split.out, ch_fasta, ch_fai, ch_dict)
-    bcftools_compress_and_index(gatk_haplotypecaller.out)
-    bcftools_prep_vcf(gatk_haplotypecaller.out)
+
+    if (params.variantcaller == "gatk") {
+        ch_vcf = gatk_haplotypecaller(gatk_split.out, ch_fasta, ch_fai, ch_dict)
+    }
+    else if (params.variantcaller == "bcftools") {
+        ch_vcf = bcftools_variantcall(gatk_split.out, ch_fasta, ch_fai)
+    }
+    else {
+        exit 1, 'Please provide a valid variantcaller [gatk/bcftools].'
+    }
+    bcftools_compress_and_index(ch_vcf)
+    bcftools_prep_vcf(ch_vcf)
     gatk_asereadcounter(bcftools_prep_vcf.out, ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
     bootstrapann(bcftools_compress_and_index.out, gatk_asereadcounter.out)
     vep(bootstrapann.out, ch_fasta, ch_fai, ch_vep_cache)
