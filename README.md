@@ -61,6 +61,9 @@ Modify the config file:
 | downsample_regions | bed file with regions to be downsampled prior to variant calling. Only 0.1% of the reads will be kept |
 | vep_cache | path to vep cache for offline use |
 | reference_count_file | File with reference gene counts for aberrant expression analysis (drop) |
+| run_drop_ae | Run the aberrant expression module from DROP (Turned off by default) |
+| variantcaller | Specify variant caller. Available callers are: bcftools (default) and gatk |
+
 
 The pipeline will automatically download and cache the singularity/docker images.
 
