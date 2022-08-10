@@ -44,7 +44,10 @@ ch_reference_cnts = params.reference_count_file ? file(params.reference_count_fi
 
 // Setup tempdir - can be overridden in config
 params.tmpdir = "${workflow.workDir}/run_tmp/${workflow.runName}"
-file(params.tmpdir).mkdirs()
+result = file(params.tmpdir).mkdirs()
+if ( !result ) {
+    exit 1, "Cannot create tmpdir: $params.tmpdir"
+}
 
 // Import processes
 include {
