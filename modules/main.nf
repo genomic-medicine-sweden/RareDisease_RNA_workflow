@@ -119,12 +119,45 @@ process cat_fastq{
         tuple val(sample), path(r1), path(r2)
 
     output:
-        tuple val(sample), file("${sample}_1.fastq"), file("${sample}_2.fastq") , emit: fastq
+        tuple val(sample), file("${sample}_1.fastq*"), file("${sample}_2.fastq*") , emit: fastq
+
+    script:
+    def extension = ( r1.getExtension() == "gz" ) ? ".fastq.gz" : ".fastq"
+    def read_1 = sample + "_1" + extension
+    def read_2 = sample + "_2" + extension
 
     """
-    zcat ${r1} > ${sample}_1.fastq
-    zcat ${r2} > ${sample}_2.fastq
+    cat ${r1} > ${read_1}
+    cat ${r2} > ${read_2}
+    """
+}
 
+process fastp {
+
+    input:
+        tuple val(sample), file(r1), file(r2)
+
+    output:
+        tuple val(sample), path("${sample}_1.fastp.fastq.gz"), path("${sample}_2.fastp.fastq.gz"), emit: reads
+        tuple val(sample), path('*.json')          , emit: json
+        tuple val(sample), path('*.html')          , emit: html
+        tuple val(sample), path('*.log')           , emit: log
+
+    script:
+
+    """
+    fastp \\
+        --in1 ${r1} \\
+        --in2 ${r2} \\
+        --out1 ${sample}_1.fastp.fastq.gz \\
+        --out2 ${sample}_2.fastp.fastq.gz \\
+        --json ${sample}.fastp.json \\
+        --html ${sample}.fastp.html \\
+        --detect_adapter_for_pe \\
+        --correction \\
+        --overrepresentation_analysis \\
+        --thread ${task.cpus} \\
+        2> ${sample}.fastp.log
     """
 }
 
@@ -134,7 +167,7 @@ process trim_galore{
 	    tuple val(sample), file(r1), file(r2)
 
     output:
-        tuple val(sample), file("${sample}_val_1.fq"), file("${sample}_val_2.fq"), emit: trimmed_fastq
+        tuple val(sample), file("${sample}_val_1.fq*"), file("${sample}_val_2.fq*"), emit: trimmed_fastq
         tuple val(sample), file("${r1}_trimming_report.txt"), file("${r2}_trimming_report.txt"), emit: report
 
     script:
@@ -182,6 +215,10 @@ process STAR_Aln{
         tuple val(sample), file("${sample}.ReadsPerGene.out.tab") , emit : counts
         tuple val(sample), file('*Log.out'), file('*Log.final.out'), file('*Log.progress.out') , emit: star_multiqc
 
+    script:
+
+    def read_cmd = (r1.getExtension() == "gz") ? "--readFilesCommand gunzip -c" : ""
+
     """
     STAR --genomeDir ${star_index} \\
          --readFilesIn ${r1} ${r2} \\
@@ -197,7 +234,8 @@ process STAR_Aln{
          --peOverlapMMp 0.1 \\
          --chimSegmentMin 12 \\
          --chimJunctionOverhangMin 12 \\
-         --chimOutType WithinBAM
+         --chimOutType WithinBAM \\
+         $read_cmd
 
     mv ${sample}.Aligned.sortedByCoord.out.bam ${sample}.bam
     """

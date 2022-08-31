@@ -60,6 +60,7 @@ include {
     build_rrna_intervallist;
     cat_fastq;
     drop_aberrant_expression;
+    fastp;
     fastqc;
     filter_bam;
     gatk_asereadcounter;
@@ -94,10 +95,29 @@ workflow {
     ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
     ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf)).ifEmpty([])
 
-    // Alignment
+    // Create channel for multiqc
+    ch_multiqc_input = ch_reads.map{ it.first() }
+
     cat_fastq(ch_reads)
-    trim_galore(cat_fastq.out)
-    STAR_Aln(trim_galore.out.trimmed_fastq, ch_star_index)
+
+    // Trimming
+    if (params.trimmer == 'trimgalore') {
+        ch_trimmed_reads = trim_galore(cat_fastq.out).trimmed_fastq
+        ch_multiqc_input = ch_multiqc_input.join(trim_galore.out.report)
+    }
+    else if (params.trimmer == 'fastp' ) {
+        ch_trimmed_reads = fastp(cat_fastq.out).reads
+        ch_multiqc_input = ch_multiqc_input.join(fastp.out.json)
+    }
+    else if (params.trimmer == 'none') {
+        ch_trimmed_reads = cat_fastq.out
+    }
+    else {
+        exit 1, 'Please provide a valid trimmer option [trimgalore/fastp/none].'
+    }
+
+    // Alignment
+    STAR_Aln(ch_trimmed_reads, ch_star_index)
     index_bam(STAR_Aln.out.bam)
     ch_indexed_bam = STAR_Aln.out.bam.join(index_bam.out)
 
@@ -147,10 +167,8 @@ workflow {
     */
     recompress_and_index_vcf(vep.out.vcf)
 
-    // Combine metric output files to one channel for multiqc
-    ch_multiqc_input = ch_reads.map{ it.first() }
+    // Aggregate log files for MultiQC
     ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
-    ch_multiqc_input = ch_multiqc_input.join(trim_galore.out.report)
     ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
     ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
     ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
