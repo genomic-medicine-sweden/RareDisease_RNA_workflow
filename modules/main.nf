@@ -161,29 +161,6 @@ process fastp {
     """
 }
 
-process trim_galore{
-
-    input:
-	    tuple val(sample), file(r1), file(r2)
-
-    output:
-        tuple val(sample), file("${sample}_val_1.fq*"), file("${sample}_val_2.fq*"), emit: trimmed_fastq
-        tuple val(sample), file("${r1}_trimming_report.txt"), file("${r2}_trimming_report.txt"), emit: report
-
-    script:
-
-    def cores = 1
-    if (task.cpus) {
-        cores = (task.cpus as int) - 4
-        if (cores < 1) cores = 1
-        if (cores > 4) cores = 4
-    }
-
-    """
-    trim_galore ${r1} ${r2} --paired --basename ${sample} --cores $cores
-    """
-}
-
 process fastqc{
 
     input:

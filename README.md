@@ -63,7 +63,6 @@ Modify the config file:
 | reference_count_file | File with reference gene counts for aberrant expression analysis (drop) |
 | run_drop_ae | Run the aberrant expression module from DROP (Turned off by default) |
 | variantcaller | Specify variant caller. Available callers are: bcftools (default) and gatk |
-| trimmer | Specify your read trimmer. Available options are: fastp (default), trimgalore and none |
 
 
 The pipeline will automatically download and cache the singularity/docker images.

@@ -78,7 +78,6 @@ include {
     picard_collectrnaseqmetrics;
     STAR_Aln;
     stringtie;
-    trim_galore;
     untar_star_index;
     vep;
 } from './modules/main'
@@ -101,23 +100,10 @@ workflow {
     cat_fastq(ch_reads)
 
     // Trimming
-    if (params.trimmer == 'trimgalore') {
-        ch_trimmed_reads = trim_galore(cat_fastq.out).trimmed_fastq
-        ch_multiqc_input = ch_multiqc_input.join(trim_galore.out.report)
-    }
-    else if (params.trimmer == 'fastp' ) {
-        ch_trimmed_reads = fastp(cat_fastq.out).reads
-        ch_multiqc_input = ch_multiqc_input.join(fastp.out.json)
-    }
-    else if (params.trimmer == 'none') {
-        ch_trimmed_reads = cat_fastq.out
-    }
-    else {
-        exit 1, 'Please provide a valid trimmer option [trimgalore/fastp/none].'
-    }
+    fastp(cat_fastq.out)
 
     // Alignment
-    STAR_Aln(ch_trimmed_reads, ch_star_index)
+    STAR_Aln(fastp.out.reads, ch_star_index)
     index_bam(STAR_Aln.out.bam)
     ch_indexed_bam = STAR_Aln.out.bam.join(index_bam.out)
 
@@ -169,6 +155,7 @@ workflow {
 
     // Aggregate log files for MultiQC
     ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
+    ch_multiqc_input = ch_multiqc_input.join(fastp.out.json)
     ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
     ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)
     ch_multiqc_input = ch_multiqc_input.join(gffcompare.out.multiqc)
