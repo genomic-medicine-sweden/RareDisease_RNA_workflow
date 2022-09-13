@@ -115,6 +115,8 @@ process gtf2refflat{
 
 process cat_fastq{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(r1), path(r2)
 
@@ -133,6 +135,8 @@ process cat_fastq{
 }
 
 process fastp {
+
+    tag "$sample"
 
     input:
         tuple val(sample), file(r1), file(r2)
@@ -163,6 +167,8 @@ process fastp {
 
 process fastqc{
 
+    tag "$sample"
+
     input:
 	    tuple val(sample), path(r1), path(r2)
 
@@ -182,6 +188,8 @@ process fastqc{
 }
 
 process STAR_Aln{
+
+    tag "$sample"
 
     input:
 	    tuple val(sample), path(r1), path(r2)
@@ -219,6 +227,8 @@ process STAR_Aln{
 }
 
 process index_bam{
+
+    tag "$sample"
 
     input:
         tuple val(sample), path(bam)
@@ -315,6 +325,8 @@ process drop_aberrant_expression{
 
 process picard_collectrnaseqmetrics{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(bam), path(bai)
         path(refflat)
@@ -345,6 +357,8 @@ process picard_collectrnaseqmetrics{
 
 process stringtie{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(bam), path(bai)
         path gtf
@@ -368,6 +382,8 @@ process stringtie{
 
 process gffcompare{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(stringtie_gtf)
         path gtf
@@ -383,6 +399,8 @@ process gffcompare{
 }
 
 process filter_bam {
+
+    tag "$sample"
 
     input:
         tuple val(sample), path(bam), path(bai)
@@ -404,6 +422,8 @@ process filter_bam {
 
 process gatk_split{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(bam), path(bai)
         path fasta
@@ -420,6 +440,8 @@ process gatk_split{
 }
 
 process gatk_haplotypecaller{
+
+    tag "$sample"
 
     input:
 	    tuple val(sample), path(bam), file(bai)
@@ -440,6 +462,8 @@ process gatk_haplotypecaller{
 
 process bcftools_variantcall{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(bam), path(bai)
         path fasta
@@ -458,6 +482,8 @@ process bcftools_variantcall{
 
 process bcftools_compress_and_index{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(vcf)
 
@@ -472,6 +498,8 @@ process bcftools_compress_and_index{
 
 process bcftools_prep_vcf{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(vcf)
 
@@ -485,6 +513,8 @@ process bcftools_prep_vcf{
 }
 
 process gatk_asereadcounter{
+
+    tag "$sample"
 
     input:
         tuple val(sample), path(vcf), path(tbi)
@@ -506,6 +536,8 @@ process gatk_asereadcounter{
 
 process bootstrapann{
 
+    tag "$sample"
+
     input:
         tuple val(sample), path(vcf), path(tbi)
         tuple val(sample), path(csv)
@@ -519,6 +551,8 @@ process bootstrapann{
 }
 
 process vep{
+
+    tag "$sample"
 
     input:
         tuple val(sample), path(vcf)
