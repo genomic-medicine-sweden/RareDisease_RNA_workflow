@@ -257,11 +257,12 @@ process generate_gene_counts4drop{
 
     script:
         def ref_counts = reference_count_file ? "--ref_count_file $reference_count_file" : ""
+        def input_samples = samples.join(' ')
 
 	"""
 	generate_gene_counts.py \\
 		--star $counts \\
-		--sample $samples \\
+		--sample $input_samples \\
 		--strandedness $params.strandedness \\
         $ref_counts \\
 		--output processed_geneCounts.tsv \\
