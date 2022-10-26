@@ -81,7 +81,7 @@ otherwise:
 	bcftools
     BootstrapAnn (https://github.com/J35P312/BootstrapAnn)
 	drop
-	fastQC
+	fastp
 	gatk
 	gffcompare
 	multiQC
