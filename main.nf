@@ -88,10 +88,10 @@ workflow {
     // Preprocess references
     ch_star_index = untar_star_index(ch_star_index).ifEmpty(ch_star_index)
     ch_gtf = gunzip_gtf(ch_gtf).ifEmpty(ch_gtf)
-    ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
-    ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
-    ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
-    ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf)).ifEmpty([])
+    ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta).collect() : ch_fai
+    ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta).collect() : ch_dict
+    ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf).collect() : ch_refflat
+    ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf).collect()).ifEmpty([])
 
     // Create channel for multiqc
     ch_multiqc_input = ch_reads.map{ it.first() }
