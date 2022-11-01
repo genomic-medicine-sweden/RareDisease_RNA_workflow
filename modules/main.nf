@@ -454,8 +454,8 @@ process bcftools_variantcall{
     script:
 
     """
-    bcftools mpileup --fasta-ref ${fasta} --output-type u  --max-depth 20000 ${bam} | \\
-    bcftools call --pval-threshold 0.01  -mv --output-type v --threads ${task.cpus} --output ${sample}.vcf
+    bcftools mpileup --fasta-ref ${fasta} --output-type u --threads ${task.cpus} --max-depth 20000 ${bam} | \\
+    bcftools call --pval-threshold 0.01 -mv --output-type v --threads ${task.cpus} --output ${sample}.vcf
     """
 }
 
