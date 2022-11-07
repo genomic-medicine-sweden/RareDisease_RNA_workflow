@@ -1,0 +1,10 @@
+reports:
+  multiqc_report.html:
+    display: "MultiQC HTML report"
+    mimeType: "text/html"
+  "**/*.fastp.html":
+    display: "fastp HTML report"
+    mimeType: "text/html"
+  "**/*.Log.final.out":
+    display: "STAR log"
+    mimeType: "text/plain"
