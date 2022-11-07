@@ -15,7 +15,7 @@
                     "type": "string",
                     "description": "Name of reference genome.",
                     "fa_icon": "fas fa-book",
-                    "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference. This is then used to build the full paths for all required reference genome files e.g. `--genome GRCh38`. \n\nSee the [nf-core website docs](https://nf-co.re/usage/reference_genomes) for more details.",
+                    "help_text": "Set which reference genome to use",
                     "enum": [
                         "GRCh37",
                         "GRCh38"
@@ -27,7 +27,7 @@
                     "mimetype": "text/plain",
                     "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
                     "description": "Path to FASTA genome file.",
-                    "help_text": "This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.",
+                    "help_text": "Name of the fasta file containing the reference genome. Must be in the reference directory.",
                     "fa_icon": "far fa-file-code",
                     "default": "grch37_homo_sapiens_-gencode_pri-.fasta"
                 },
@@ -147,8 +147,7 @@
                 "bcftools",
                 "gatk"
             ],
-            "fa_icon": "fas fa-search",
-            "help_text": ""
+            "fa_icon": "fas fa-search"
         },
         "run_drop_ae": {
             "type": "boolean",
