@@ -1,0 +1,160 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
+    "title": ". pipeline parameters",
+    "description": "RNA pipe for the GMS-RD-RNA project",
+    "type": "object",
+    "definitions": {
+        "reference_genome_options": {
+            "title": "Reference genome options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Reference genome related files and options required for the workflow.",
+            "properties": {
+                "genome": {
+                    "type": "string",
+                    "description": "Name of reference genome.",
+                    "fa_icon": "fas fa-book",
+                    "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference. This is then used to build the full paths for all required reference genome files e.g. `--genome GRCh38`. \n\nSee the [nf-core website docs](https://nf-co.re/usage/reference_genomes) for more details.",
+                    "enum": [
+                        "GRCh37",
+                        "GRCh38"
+                    ]
+                },
+                "fasta": {
+                    "type": "string",
+                    "format": "file-path",
+                    "mimetype": "text/plain",
+                    "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
+                    "description": "Path to FASTA genome file.",
+                    "help_text": "This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.",
+                    "fa_icon": "far fa-file-code"
+                },
+                "reference_dir": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0",
+                    "description": "Path to directory with references",
+                    "format": "directory-path",
+                    "help_text": "All your reference files should be placed here. The rest of the reference files will be assumed to be in this directory."
+                },
+                "gtf": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf",
+                    "description": "Transcript annotation in gtf format"
+                },
+                "star_index": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_homo_sapiens_-gencode_pri-.fasta_star_genome_dir/",
+                    "description": "Name of STAR index directory"
+                },
+                "rrna_intervals": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf.rrna.interval_list",
+                    "description": "rRNA intervals in interval_list format"
+                },
+                "annotation_refflat": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf.refflat",
+                    "description": "Annotation file in refflat format"
+                }
+            },
+            "required": [
+                "fasta",
+                "reference_dir",
+                "gtf",
+                "star_index"
+            ]
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/reference_genome_options"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
+    ],
+    "properties": {
+        "output": {
+            "type": "string",
+            "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/results",
+            "description": "Path to output folder"
+        },
+        "platform": {
+            "type": "string",
+            "default": "ILLUMINA",
+            "hidden": true,
+            "description": "Platform used for sequencing"
+        },
+        "strandedness": {
+            "type": "string",
+            "default": "reverse",
+            "description": "Library strandedness"
+        },
+        "downsample_regions": {
+            "type": "string",
+            "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/resources/grch37_hemoglobin.bed",
+            "description": "Bed file with regions to downsample prior to variant calling,"
+        },
+        "vep_cache": {
+            "type": "string",
+            "default": "/home/proj/stage/rare-disease/references/references_10.0/ensembl-tools-release-104/cache",
+            "description": "Name of Directory which contains the VEP cache"
+        },
+        "reference_count_file": {
+            "type": "string",
+            "default": "/home/proj/stage/rare-disease/references/references_10.0/gms_blood_counts.tsv",
+            "description": "File with gene counts to be used with DROP"
+        },
+        "variantcaller": {
+            "type": "string",
+            "default": "bcftools",
+            "description": "Which variant caller to run",
+            "enum": [
+                "bcftools",
+                "gatk"
+            ]
+        },
+        "run_drop_ae": {
+            "type": "string",
+            "default": "false",
+            "description": "Run DROP aberrant expression module"
+        },
+        "r1": {
+            "type": "string",
+            "default": null
+        },
+        "r2": {
+            "type": "string",
+            "default": null
+        },
+        "samplesheet": {
+            "type": "string",
+            "default": null,
+            "format": "file-path",
+            "mimetype": "text/csv"
+        },
+        "tmpdir": {
+            "type": "string",
+            "default": null
+        }
+    },
+    "required": [
+        "vep_cache"
+    ]
+}
