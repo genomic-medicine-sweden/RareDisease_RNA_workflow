@@ -19,43 +19,49 @@
                     "enum": [
                         "GRCh37",
                         "GRCh38"
-                    ]
+                    ],
+                    "default": "GRCh37"
                 },
                 "fasta": {
                     "type": "string",
-                    "format": "file-path",
                     "mimetype": "text/plain",
                     "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
                     "description": "Path to FASTA genome file.",
                     "help_text": "This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.",
-                    "fa_icon": "far fa-file-code"
+                    "fa_icon": "far fa-file-code",
+                    "default": "grch37_homo_sapiens_-gencode_pri-.fasta"
                 },
                 "reference_dir": {
                     "type": "string",
                     "default": "/home/proj/stage/rare-disease/references/references_10.0",
                     "description": "Path to directory with references",
                     "format": "directory-path",
-                    "help_text": "All your reference files should be placed here. The rest of the reference files will be assumed to be in this directory."
+                    "help_text": "All your reference files should be placed here. The rest of the reference files will be assumed to be in this directory.",
+                    "fa_icon": "far fa-folder-open"
                 },
                 "gtf": {
                     "type": "string",
                     "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf",
-                    "description": "Transcript annotation in gtf format"
+                    "description": "Transcript annotation in gtf format",
+                    "fa_icon": "far fa-file-code"
                 },
                 "star_index": {
                     "type": "string",
                     "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_homo_sapiens_-gencode_pri-.fasta_star_genome_dir/",
-                    "description": "Name of STAR index directory"
+                    "description": "Name of STAR index directory",
+                    "fa_icon": "far fa-folder-open"
                 },
                 "rrna_intervals": {
                     "type": "string",
                     "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf.rrna.interval_list",
-                    "description": "rRNA intervals in interval_list format"
+                    "description": "rRNA intervals in interval_list format",
+                    "fa_icon": "far fa-file-code"
                 },
                 "annotation_refflat": {
                     "type": "string",
                     "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf.refflat",
-                    "description": "Annotation file in refflat format"
+                    "description": "Annotation file in refflat format",
+                    "fa_icon": "far fa-file-code"
                 }
             },
             "required": [
@@ -77,6 +83,18 @@
                     "description": "Display help text.",
                     "fa_icon": "fas fa-question-circle",
                     "hidden": true
+                },
+                "platform": {
+                    "type": "string",
+                    "default": "ILLUMINA",
+                    "hidden": true,
+                    "description": "Platform used for sequencing",
+                    "fa_icon": "fas fa-hdd"
+                },
+                "tmpdir": {
+                    "type": "string",
+                    "default": "None",
+                    "fa_icon": "far fa-folder-open"
                 }
             }
         }
@@ -93,33 +111,33 @@
         "output": {
             "type": "string",
             "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/results",
-            "description": "Path to output folder"
-        },
-        "platform": {
-            "type": "string",
-            "default": "ILLUMINA",
-            "hidden": true,
-            "description": "Platform used for sequencing"
+            "description": "Path to output folder",
+            "fa_icon": "far fa-folder-open"
         },
         "strandedness": {
             "type": "string",
             "default": "reverse",
-            "description": "Library strandedness"
+            "description": "Library strandedness",
+            "fa_icon": "fas fa-exchange-alt"
         },
         "downsample_regions": {
             "type": "string",
             "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/resources/grch37_hemoglobin.bed",
-            "description": "Bed file with regions to downsample prior to variant calling,"
+            "description": "Bed file with regions to downsample prior to variant calling,",
+            "fa_icon": "fas fa-chevron-circle-down",
+            "help_text": "Optionally downsample a region of the bam file prior to running variant calling."
         },
         "vep_cache": {
             "type": "string",
             "default": "/home/proj/stage/rare-disease/references/references_10.0/ensembl-tools-release-104/cache",
-            "description": "Name of Directory which contains the VEP cache"
+            "description": "Name of Directory which contains the VEP cache",
+            "fa_icon": "far fa-folder-open"
         },
         "reference_count_file": {
             "type": "string",
             "default": "/home/proj/stage/rare-disease/references/references_10.0/gms_blood_counts.tsv",
-            "description": "File with gene counts to be used with DROP"
+            "description": "File with gene counts to be used with DROP",
+            "fa_icon": "far fa-file-code"
         },
         "variantcaller": {
             "type": "string",
@@ -128,30 +146,38 @@
             "enum": [
                 "bcftools",
                 "gatk"
-            ]
+            ],
+            "fa_icon": "fas fa-search",
+            "help_text": ""
         },
         "run_drop_ae": {
-            "type": "string",
-            "default": "false",
-            "description": "Run DROP aberrant expression module"
+            "type": "boolean",
+            "description": "Run DROP aberrant expression module",
+            "fa_icon": "fas fa-tint",
+            "help_text": "Whether to run the aberrant expression module of DROP (https://github.com/gagneurlab/drop) or not"
         },
         "r1": {
             "type": "string",
-            "default": null
+            "default": "None",
+            "description": "Read 1",
+            "fa_icon": "fas fa-file-import",
+            "help_text": "Path to read 1"
         },
         "r2": {
             "type": "string",
-            "default": null
+            "default": "None",
+            "description": "Read 2",
+            "fa_icon": "fas fa-file-import",
+            "help_text": "Path to read 2"
         },
         "samplesheet": {
             "type": "string",
-            "default": null,
+            "default": "None",
             "format": "file-path",
-            "mimetype": "text/csv"
-        },
-        "tmpdir": {
-            "type": "string",
-            "default": null
+            "mimetype": "text/csv",
+            "description": "Sample sheet",
+            "fa_icon": "fas fa-file-csv",
+            "help_text": "Format: id,read1,read2"
         }
     },
     "required": [
