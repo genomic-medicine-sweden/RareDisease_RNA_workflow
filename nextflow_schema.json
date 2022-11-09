@@ -1,0 +1,185 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
+    "title": ". pipeline parameters",
+    "description": "RNA pipe for the GMS-RD-RNA project",
+    "type": "object",
+    "definitions": {
+        "reference_genome_options": {
+            "title": "Reference genome options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Reference genome related files and options required for the workflow.",
+            "properties": {
+                "genome": {
+                    "type": "string",
+                    "description": "Name of reference genome.",
+                    "fa_icon": "fas fa-book",
+                    "help_text": "Set which reference genome to use",
+                    "enum": [
+                        "GRCh37",
+                        "GRCh38"
+                    ],
+                    "default": "GRCh37"
+                },
+                "fasta": {
+                    "type": "string",
+                    "mimetype": "text/plain",
+                    "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
+                    "description": "Path to FASTA genome file.",
+                    "help_text": "Name of the fasta file containing the reference genome. Must be in the reference directory.",
+                    "fa_icon": "far fa-file-code",
+                    "default": "grch37_homo_sapiens_-gencode_pri-.fasta"
+                },
+                "reference_dir": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0",
+                    "description": "Path to directory with references",
+                    "format": "directory-path",
+                    "help_text": "All your reference files should be placed here. The rest of the reference files will be assumed to be in this directory.",
+                    "fa_icon": "far fa-folder-open"
+                },
+                "gtf": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf",
+                    "description": "Transcript annotation in gtf format",
+                    "fa_icon": "far fa-file-code"
+                },
+                "star_index": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_homo_sapiens_-gencode_pri-.fasta_star_genome_dir/",
+                    "description": "Name of STAR index directory",
+                    "fa_icon": "far fa-folder-open"
+                },
+                "rrna_intervals": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf.rrna.interval_list",
+                    "description": "rRNA intervals in interval_list format",
+                    "fa_icon": "far fa-file-code"
+                },
+                "annotation_refflat": {
+                    "type": "string",
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_gencode_annotation_-v37-.gtf.refflat",
+                    "description": "Annotation file in refflat format",
+                    "fa_icon": "far fa-file-code"
+                }
+            },
+            "required": [
+                "fasta",
+                "reference_dir",
+                "gtf",
+                "star_index"
+            ]
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
+                "platform": {
+                    "type": "string",
+                    "default": "ILLUMINA",
+                    "hidden": true,
+                    "description": "Platform used for sequencing",
+                    "fa_icon": "fas fa-hdd"
+                },
+                "tmpdir": {
+                    "type": "string",
+                    "default": "None",
+                    "fa_icon": "far fa-folder-open"
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/reference_genome_options"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
+    ],
+    "properties": {
+        "output": {
+            "type": "string",
+            "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/results",
+            "description": "Path to output folder",
+            "fa_icon": "far fa-folder-open"
+        },
+        "strandedness": {
+            "type": "string",
+            "default": "reverse",
+            "description": "Library strandedness",
+            "fa_icon": "fas fa-exchange-alt"
+        },
+        "downsample_regions": {
+            "type": "string",
+            "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/resources/grch37_hemoglobin.bed",
+            "description": "Bed file with regions to downsample prior to variant calling,",
+            "fa_icon": "fas fa-chevron-circle-down",
+            "help_text": "Optionally downsample a region of the bam file prior to running variant calling."
+        },
+        "vep_cache": {
+            "type": "string",
+            "default": "/home/proj/stage/rare-disease/references/references_10.0/ensembl-tools-release-104/cache",
+            "description": "Name of Directory which contains the VEP cache",
+            "fa_icon": "far fa-folder-open"
+        },
+        "reference_count_file": {
+            "type": "string",
+            "default": "/home/proj/stage/rare-disease/references/references_10.0/gms_blood_counts.tsv",
+            "description": "File with gene counts to be used with DROP",
+            "fa_icon": "far fa-file-code"
+        },
+        "variantcaller": {
+            "type": "string",
+            "default": "bcftools",
+            "description": "Which variant caller to run",
+            "enum": [
+                "bcftools",
+                "gatk"
+            ],
+            "fa_icon": "fas fa-search"
+        },
+        "run_drop_ae": {
+            "type": "boolean",
+            "description": "Run DROP aberrant expression module",
+            "fa_icon": "fas fa-tint",
+            "help_text": "Whether to run the aberrant expression module of DROP (https://github.com/gagneurlab/drop) or not"
+        },
+        "r1": {
+            "type": "string",
+            "default": "None",
+            "description": "Read 1",
+            "fa_icon": "fas fa-file-import",
+            "help_text": "Path to read 1"
+        },
+        "r2": {
+            "type": "string",
+            "default": "None",
+            "description": "Read 2",
+            "fa_icon": "fas fa-file-import",
+            "help_text": "Path to read 2"
+        },
+        "samplesheet": {
+            "type": "string",
+            "default": "None",
+            "format": "file-path",
+            "mimetype": "text/csv",
+            "description": "Sample sheet",
+            "fa_icon": "fas fa-file-csv",
+            "help_text": "Format: id,read1,read2"
+        }
+    },
+    "required": [
+        "vep_cache"
+    ]
+}

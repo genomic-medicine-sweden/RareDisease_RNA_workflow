@@ -61,7 +61,6 @@ include {
     cat_fastq;
     drop_aberrant_expression;
     fastp;
-    fastqc;
     filter_bam;
     gatk_asereadcounter;
     gatk_haplotypecaller;
@@ -89,10 +88,10 @@ workflow {
     // Preprocess references
     ch_star_index = untar_star_index(ch_star_index).ifEmpty(ch_star_index)
     ch_gtf = gunzip_gtf(ch_gtf).ifEmpty(ch_gtf)
-    ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta) : ch_fai
-    ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta) : ch_dict
-    ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf) : ch_refflat
-    ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf)).ifEmpty([])
+    ch_fai = ch_fai.isEmpty() ? index_fasta(ch_fasta).collect() : ch_fai
+    ch_dict = ch_dict.isEmpty() ? build_fasta_dict(ch_fasta).collect() : ch_dict
+    ch_refflat = ch_refflat.isEmpty() ? gtf2refflat(ch_gtf).collect() : ch_refflat
+    ch_rrna_intervals = ch_rrna_intervals ?: build_rrna_intervallist(ch_dict, get_rrna_transcripts(ch_gtf).collect()).ifEmpty([])
 
     // Create channel for multiqc
     ch_multiqc_input = ch_reads.map{ it.first() }
@@ -108,7 +107,6 @@ workflow {
     ch_indexed_bam = STAR_Aln.out.bam.join(index_bam.out)
 
     // QC
-    fastqc(cat_fastq.out)
     picard_collectrnaseqmetrics(ch_indexed_bam, ch_refflat, ch_rrna_intervals)
 
     // Assemble transcripts
@@ -145,7 +143,7 @@ workflow {
     }
     bcftools_compress_and_index(ch_vcf)
     bcftools_prep_vcf(ch_vcf)
-    gatk_asereadcounter(bcftools_prep_vcf.out, ch_indexed_bam, ch_fasta, ch_fai, ch_dict)
+    gatk_asereadcounter(bcftools_prep_vcf.out, ch_indexed_bam, ch_fasta, ch_fai, ch_dict, ch_gtf)
     bootstrapann(bcftools_compress_and_index.out, gatk_asereadcounter.out)
     vep(bootstrapann.out, ch_fasta, ch_fai, ch_vep_cache)
     /* TODO: pass the bootstrapann vcf file to recompress and index in the case when
@@ -154,7 +152,6 @@ workflow {
     recompress_and_index_vcf(vep.out.vcf)
 
     // Aggregate log files for MultiQC
-    ch_multiqc_input = ch_multiqc_input.join(fastqc.out.zip)
     ch_multiqc_input = ch_multiqc_input.join(fastp.out.json)
     ch_multiqc_input = ch_multiqc_input.join(STAR_Aln.out.star_multiqc)
     ch_multiqc_input = ch_multiqc_input.join(picard_collectrnaseqmetrics.out)

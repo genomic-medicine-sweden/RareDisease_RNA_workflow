@@ -2,7 +2,7 @@
 .nextflow*
 work/
 data/
-results/
+results*/
 .DS_Store
 testing/
 testing*

@@ -165,28 +165,6 @@ process fastp {
     """
 }
 
-process fastqc{
-
-    tag "$sample"
-
-    input:
-	    tuple val(sample), path(r1), path(r2)
-
-    output:
-        tuple val(sample), path ("*1_fastqc.zip"), path ("*2_fastqc.zip"), emit: zip
-
-    script:
-
-    def R1 = r1.getName()
-    def R2 = r2.getName()
-
-    """
-    [ ! -f ${R1} ] && ln -s ${r1} ${R1}
-    [ ! -f ${R2} ] && ln -s ${r2} ${R2}
-    fastqc --threads ${task.cpus} ${R1} ${R2}
-    """
-}
-
 process STAR_Aln{
 
     tag "$sample"
@@ -476,8 +454,8 @@ process bcftools_variantcall{
     script:
 
     """
-    bcftools mpileup --fasta-ref ${fasta} --output-type u  --max-depth 20000 ${bam} | \\
-    bcftools call --pval-threshold 0.01  -mv --output-type v --threads ${task.cpus} --output ${sample}.vcf
+    bcftools mpileup --fasta-ref ${fasta} --output-type u --threads ${task.cpus} --max-depth 20000 ${bam} | \\
+    bcftools call --pval-threshold 0.01 -mv --output-type v --threads ${task.cpus} --output ${sample}.vcf
     """
 }
 
@@ -523,6 +501,7 @@ process gatk_asereadcounter{
         path fasta
         path fai
         path dict
+        path gtf
 
     output:
         tuple val(sample), file("${sample}_ase.csv")
@@ -531,7 +510,14 @@ process gatk_asereadcounter{
         file(params.tmpdir).mkdir()
 
     """
-    gatk ASEReadCounter --tmp-dir ${params.tmpdir} -R ${fasta} -O ${sample}_ase.csv -I ${bam} -V ${vcf}
+    awk '{ if (\$1 !~ /^#/) {print \$1} }' ${gtf} | uniq > ./regions.intervals
+    gatk ASEReadCounter \\
+        --tmp-dir ${params.tmpdir} \\
+        -R ${fasta} \\
+        -O ${sample}_ase.csv \\
+        -I ${bam} \\
+        -V ${vcf} \\
+        -L ./regions.intervals
     """
 }
 
