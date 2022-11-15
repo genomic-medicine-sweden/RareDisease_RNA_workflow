@@ -29,7 +29,7 @@
                     "description": "Path to FASTA genome file.",
                     "help_text": "Name of the fasta file containing the reference genome. Must be in the reference directory.",
                     "fa_icon": "far fa-file-code",
-                    "default": "grch37_homo_sapiens_-gencode_pri-.fasta"
+                    "default": "/home/proj/stage/rare-disease/references/references_10.0/grch37_homo_sapiens_-gencode_pri-.fasta"
                 },
                 "reference_dir": {
                     "type": "string",
@@ -93,8 +93,9 @@
                 },
                 "tmpdir": {
                     "type": "string",
-                    "default": "None",
-                    "fa_icon": "far fa-folder-open"
+                    "default": ".",
+                    "fa_icon": "far fa-folder-open",
+                    "format": "directory-path"
                 }
             }
         }
