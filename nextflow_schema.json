@@ -13,7 +13,6 @@
             "properties": {
                 "samplesheet": {
                     "type": "string",
-                    "default": "None",
                     "format": "file-path",
                     "mimetype": "text/csv",
                     "description": "Sample sheet",
@@ -22,14 +21,12 @@
                 },
                 "r1": {
                     "type": "string",
-                    "default": "None",
                     "description": "Read 1",
                     "fa_icon": "fas fa-file-import",
                     "help_text": "Path to read 1"
                 },
                 "r2": {
                     "type": "string",
-                    "default": "None",
                     "description": "Read 2",
                     "fa_icon": "fas fa-file-import",
                     "help_text": "Path to read 2"
@@ -124,7 +121,7 @@
                 },
                 "downsample_regions": {
                     "type": "string",
-                    "default": "/Users/andersjemt/aj/github_repos/RareDisease_RNA_workflow/resources/grch37_hemoglobin.bed",
+                    "default": "${projectDir}/resources/${genome.toLowerCase()}_hemoglobin.bed",
                     "description": "Bed file with regions to downsample prior to variant calling,",
                     "fa_icon": "fas fa-chevron-circle-down",
                     "help_text": "Optionally downsample a region of the bam file prior to running variant calling."
