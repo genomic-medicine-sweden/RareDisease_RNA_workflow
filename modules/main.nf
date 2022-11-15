@@ -235,7 +235,7 @@ process generate_gene_counts4drop{
 
     script:
         def ref_counts = reference_count_file ? "--ref_count_file $reference_count_file" : ""
-        def strandedness = $params.strandedness ? "strandedness = $params.strandedness" : ""
+        def strandedness = params.strandedness ? "--strandedness $params.strandedness" : ""
         def input_samples = samples.join(' ')
 
 	"""
