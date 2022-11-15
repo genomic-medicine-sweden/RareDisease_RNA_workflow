@@ -2,9 +2,15 @@ reports:
   multiqc_report.html:
     display: "MultiQC HTML report"
     mimeType: "text/html"
-  "**/*.fastp.html":
+  "*.fastp.html":
     display: "fastp HTML report"
     mimeType: "text/html"
-  "**/*.Log.final.out":
+  "*.Log.final.out":
     display: "STAR log"
+    mimeType: "text/plain"
+  "*_ann.html":
+    display: "VEP annotation report"
+    mimeType: "text/html"
+  "*_stringtie.stats":
+    display: "StringTie assembly compared to gene annotation file"
     mimeType: "text/plain"
