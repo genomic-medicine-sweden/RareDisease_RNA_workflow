@@ -5,6 +5,10 @@
 
 # RareDisease_RNA_workflow
 
+## ARCHIVE
+This repo and its functionality has been supersede by https://github.com/genomic-medicine-sweden/tomte 
+This repo was therefor archived on 2024-04-18
+
 nextflow main.nf --help
 
 To test the pipeline run:
